@@ -48,8 +48,13 @@ class TestResponse(unittest.TestCase):
     def testInfo(self):
         response = HttpClient().get('http://code.google.com/p/urllib4/')
         
-        self.assert_(response.total_time > 0)
         self.assert_(response.namelookup_time >= 0)
+        self.assert_(response.connect_time >= 0)
+        #self.assert_(response.appconnect_time > 0)
+        self.assert_(response.pretransfer_time >= 0)
+        self.assert_(response.starttransfer_time >= 0)
+        self.assert_(response.total_time > 0)
+        self.assert_(response.redirect_time >= 0)
         
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
