@@ -44,6 +44,13 @@ class TestRequst(unittest.TestCase):
         self.assert_(result.has_key('upload_total'))
         self.assert_(result.has_key('uploaded'))
         
+class TestResponse(unittest.TestCase):
+    def testInfo(self):
+        response = HttpClient().get('http://code.google.com/p/urllib4/')
+        
+        self.assert_(response.total_time > 0)
+        self.assert_(response.namelookup_time >= 0)
+        
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
                         format='%(asctime)s %(levelname)s %(message)s')

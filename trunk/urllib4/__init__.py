@@ -36,8 +36,6 @@ class HttpResponse(object):
                     'write', 'writelines', 'flush']:
             return getattr(self.client.body, name)
             
-        print "find ", name
-            
         raise AttributeError(name)        
     
     def __getitem__(self, key):
@@ -47,10 +45,12 @@ class HttpResponse(object):
         pass
                 
     def geturl(self):
+        '''the effective URL'''
         return self[pycurl.EFFECTIVE_URL]
         
     @property
-    def code(self):    
+    def code(self):
+        '''the HTTP or FTP code'''
         return self[pycurl.RESPONSE_CODE]
 
     @property
@@ -63,7 +63,22 @@ class HttpResponse(object):
         return self.cached_headers
     
     info = headers
-    
+        
+    @property
+    def total_time(self):
+        '''
+        the total time in seconds for the previous transfer,
+        including name resolving, TCP connect etc.
+        '''
+        return self[pycurl.TOTAL_TIME]
+        
+    @property
+    def namelookup_time(self):
+        '''
+        it took from the start until the name resolving was completed.
+        '''
+        return self[pycurl.NAMELOOKUP_TIME]
+        
 class HttpClient(object):
     INFOTYPE_NAMES = {
         pycurl.INFOTYPE_DATA_IN: 'data:in',
@@ -87,7 +102,11 @@ class HttpClient(object):
     def __del__(self):
         self.curl.close()
         self.header.close()
-        self.body.close()    
+        self.body.close()
+        
+            
+    def get(self, url, progress_callback=None):
+        return self.perform(HttpRequest(url), progress_callback)        
         
     def perform(self, request, progress_callback=None):        
         self.header.seek(0)
@@ -142,43 +161,3 @@ def urlopen(url_or_request, data_or_reader=None):
         request = HttpRequest(str(url_or_request), data_or_reader)    
         
     return HttpClient().perform(request)
-
-import unittest
-
-class TestUrlLib(unittest.TestCase):
-    def testOpen(self):
-        url = 'http://www.baidu.com'
-        
-        r = urlopen(url)
-        
-        self.assert_(url, r.geturl())
-        self.assertEquals(200, r.code)
-        self.assert_(len(r.read()) > 100)        
-        
-        self.assert_(r.headers)
-        self.assert_(r.headers.has_key('content-type'))
-        
-class TestRequst(unittest.TestCase):
-    def testCallback(self):
-        result = {}
-        
-        request = HttpRequest('http://www.baidu.com')
-            
-        response = HttpClient().perform(request,
-            progress_callback=lambda download_total, downloaded, upload_total, uploaded:
-                result.update({
-                    'download_total': download_total,
-                    'downloaded': downloaded,
-                    'upload_total': upload_total,
-                    'uploaded': uploaded}))        
-        
-        self.assert_(result.has_key('download_total'))
-        self.assert_(result.has_key('downloaded'))
-        self.assert_(result.has_key('upload_total'))
-        self.assert_(result.has_key('uploaded'))
-        
-if __name__=='__main__':    
-    logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
-                        format='%(asctime)s %(levelname)s %(message)s')
-    
-    unittest.main()
