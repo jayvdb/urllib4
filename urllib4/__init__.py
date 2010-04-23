@@ -9,6 +9,7 @@ except ImportError:
     from StringIO import StringIO
 
 from httplib import HTTPMessage
+
 import pycurl
 
 class HttpRequest(object):
@@ -36,7 +37,7 @@ class HttpResponse(object):
                     'write', 'writelines', 'flush']:
             return getattr(self.client.body, name)
             
-        raise AttributeError(name)        
+        raise AttributeError(name)
     
     def __getitem__(self, key):
         return self.client.curl.getinfo(key)
@@ -63,21 +64,77 @@ class HttpResponse(object):
         return self.cached_headers
     
     info = headers
-        
-    @property
-    def total_time(self):
-        '''
-        the total time in seconds for the previous transfer,
-        including name resolving, TCP connect etc.
-        '''
-        return self[pycurl.TOTAL_TIME]
+    
+# = Time = 
+#
+# An overview of the six time values available from curl_easy_getinfo()
+# 
+# curl_easy_perform()
+#     |
+#     |--NAMELOOKUP
+#     |--|--CONNECT
+#     |--|--|--APPCONNECT
+#     |--|--|--|--PRETRANSFER
+#     |--|--|--|--|--STARTTRANSFER
+#     |--|--|--|--|--|--TOTAL
+#     |--|--|--|--|--|--REDIRECT
         
     @property
     def namelookup_time(self):
         '''
-        it took from the start until the name resolving was completed.
+        The time it took from the start until the name resolving was completed.
         '''
         return self[pycurl.NAMELOOKUP_TIME]
+        
+    @property
+    def connect_time(self):
+        '''
+        The time it took from the start until the connect to
+        the remote host (or proxy) was completed.
+        '''
+        return self[pycurl.CONNECT_TIME]
+        
+    @property
+    def appconnect_time(self):
+        '''
+        The time it took from the start until the SSL connect/handshake
+        with the remote host was completed. (Added in in 7.19.0)
+        '''
+        return self[pycurl.APPCONNECT_TIME]
+
+    @property
+    def pretransfer_time(self):
+        '''
+        The time it took from the start until the file transfer is just about to begin.
+        This includes all pre-transfer commands and negotiations that are specific
+        to the particular protocol(s) involved.
+        '''
+        return self[pycurl.PRETRANSFER_TIME]
+        
+        
+    @property
+    def starttransfer_time(self):
+        '''
+        The time it took from the start until the first byte is just about to be transferred.
+        '''
+        return self[pycurl.STARTTRANSFER_TIME]
+        
+    @property
+    def total_time(self):
+        '''
+        The total time in seconds for the previous transfer,
+        including name resolving, TCP connect etc.
+        '''
+        return self[pycurl.TOTAL_TIME]
+                
+    @property
+    def redirect_time(self):
+        '''
+        The time it took for all redirection steps include name lookup,
+        connect, pretransfer and transfer before final transaction was started.
+        So, this is zero if no redirection took place.
+        '''
+        return self[pycurl.REDIRECT_TIME]
         
 class HttpClient(object):
     INFOTYPE_NAMES = {
@@ -103,12 +160,14 @@ class HttpClient(object):
         self.curl.close()
         self.header.close()
         self.body.close()
-        
-            
+                    
     def get(self, url, progress_callback=None):
-        return self.perform(HttpRequest(url), progress_callback)        
+        return self.perform(HttpRequest(url), progress_callback)
         
-    def perform(self, request, progress_callback=None):        
+    def post(self, url, data_or_reader, progress_callback=None):
+        return self.perform(HttpRequest(url, data_or_reader), progress_callback)
+        
+    def perform(self, request, progress_callback=None):
         self.header.seek(0)
         self.body.seek(0)
 
@@ -145,7 +204,7 @@ class HttpClient(object):
         else:
             self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 0)
 
-        self.curl.perform()        
+        self.curl.perform()
         
         self.header.seek(0)
         self.body.seek(0)
@@ -158,6 +217,6 @@ def urlopen(url_or_request, data_or_reader=None):
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
-        request = HttpRequest(str(url_or_request), data_or_reader)    
+        request = HttpRequest(str(url_or_request), data_or_reader)
         
     return HttpClient().perform(request)
