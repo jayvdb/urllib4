@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import os, os.path
+import string, binascii
 import logging
 
 try:
@@ -16,13 +17,16 @@ class HttpRequest(object):
     def __init__(self, url, data_or_reader=None, headers=None,
                  origin_req_host=None, unverifiable=False,
                  referer=None, user_agent=None,
-                 cookie_or_file=None, accept_encoding=None):
+                 cookie_or_file=None, accept_encoding=None,
+                 ssl_verify_peer=False, ssl_verify_host=False):
         self.url = url
         self.data_or_reader = data_or_reader
         self.referer = referer
         self.user_agent = user_agent
         self.cookie_or_file = cookie_or_file
         self.accept_encoding = accept_encoding
+        self.ssl_verify_peer = ssl_verify_peer
+        self.ssl_verify_host = ssl_verify_host
 
 class HttpResponse(object):
     def __init__(self, client, request):
@@ -145,13 +149,13 @@ class HttpClient(object):
         pycurl.INFOTYPE_SSL_DATA_IN: 'ssl:in',
         pycurl.INFOTYPE_SSL_DATA_OUT: 'ssl:out',
         pycurl.INFOTYPE_TEXT: 'text',
-    }
+    }    
     
     def __init__(self):
         self.curl = pycurl.Curl()
         
         self.curl.setopt(pycurl.VERBOSE, 1)
-        self.curl.setopt(pycurl.DEBUGFUNCTION, lambda t, m: logging.debug("%s: %s", self.INFOTYPE_NAMES[t], m))
+        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)
         
         self.header = StringIO()
         self.body = StringIO()
@@ -160,6 +164,12 @@ class HttpClient(object):
         self.curl.close()
         self.header.close()
         self.body.close()
+        
+    def log(self, type, msg):
+        if [c for c in msg if c not in string.printable]:
+            logging.debug("%s: %s", self.INFOTYPE_NAMES[type], binascii.hexlify(msg))
+        else:
+            logging.debug("%s: %s", self.INFOTYPE_NAMES[type], msg)
                     
     def get(self, url, progress_callback=None):
         return self.perform(HttpRequest(url), progress_callback)
@@ -203,6 +213,20 @@ class HttpClient(object):
             self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 1)
         else:
             self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 0)
+            
+        if request.ssl_verify_peer:
+            self.curl.setopt(pycurl.SSL_VERIFYPEER, 1)
+            
+            # TODO: setup the CA path
+        else:
+            self.curl.setopt(pycurl.SSL_VERIFYPEER, 0)
+            
+        if request.ssl_verify_host:
+            # the certificate must indicate that the server is the server
+            # to which you meant to connect, or the connection fails.
+            self.curl.setopt(pycurl.SSL_VERIFYHOST, 2)
+        else:
+            self.curl.setopt(pycurl.SSL_VERIFYHOST, 0)
 
         self.curl.perform()
         
