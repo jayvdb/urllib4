@@ -1,0 +1,5 @@
+#summary How to build Pycurl for win32
+
+= Introduction =
+
+Nathan E. Moore provide a very detail [http://curl.haxx.se/mail/curlpython-2009-11/0010.html guide] to build Pycurl for win32.
