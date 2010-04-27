@@ -25,9 +25,19 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         
         self.wfile.write(data)
+        
+    def redirect(self, path):
+        self.send_response(301)
+        self.send_header("Location", path)
+        self.end_headers()
 
     def do_GET(self):
-        return self.response("<html><body>Hello World</body></html>")
+        if self.path == '/':
+            return self.response("<html><body>Hello World</body></html>")
+        elif self.path == '/redirect':
+            return self.redirect('/')
+        elif self.path == '/redirect/2':
+            return self.redirect('/redirect')
         
 class TestHTTPServer(HTTPServer):
     def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
@@ -37,9 +47,7 @@ class TestHTTPServer(HTTPServer):
         try:
             self.serve_forever()
         except:
-            import traceback
-            
-            traceback.print_exc()
+            pass
                 
     def __enter__(self):
         from threading import Thread
@@ -159,9 +167,48 @@ class TestResponse(unittest.TestCase):
             #self.assert_(response.appconnect_time > 0)
             self.assert_(response.pretransfer_time >= 0)
             self.assert_(response.starttransfer_time >= 0)
-            self.assert_(response.total_time > 0)
+            self.assert_(response.total_time >= 0)
             self.assert_(response.redirect_time >= 0)
-        
+            
+    def testRedirect(self):
+        with TestHTTPServer() as httpd:
+            url = httpd.root + 'redirect'
+            r = HttpClient().get(url)
+            
+            self.assert_(httpd.root, r.geturl())
+            self.assertEquals(200, r.code)
+            self.assert_(len(r.read()) > 10)
+            
+            self.assertEqual(1, r.redirect_count)
+            self.assertEqual(None, r.redirect_url)
+            
+            r = HttpClient().perform(HttpRequest(url, follow_location=False))
+
+            self.assert_(url, r.geturl())
+            self.assertEquals(301, r.code)
+            self.assert_(len(r.read()) == 0)
+            
+            self.assertEqual(0, r.redirect_count)
+            self.assertEqual(httpd.root, r.redirect_url)
+            
+            try:
+                HttpClient().perform(HttpRequest(url, max_redirects=0))
+                self.fail()
+            except Exception, (code, msg):
+                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, code)
+                
+            try:
+                HttpClient().perform(HttpRequest(httpd.root + 'redirect/2', max_redirects=1))
+                self.fail()
+            except Exception, (code, msg):
+                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, code)
+                
+            r = HttpClient().perform(HttpRequest(httpd.root + 'redirect/2', max_redirects=2))
+            
+            self.assert_(url, r.geturl())
+            self.assertEquals(200, r.code)
+            self.assert_(len(r.read()) > 10)
+            
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
                         format='%(asctime)s %(levelname)s %(message)s')
