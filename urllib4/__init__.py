@@ -13,12 +13,18 @@ from httplib import HTTPMessage
 
 import pycurl
 
+REDIRECT_REFUSE     = 0
+REDIRECT_INFINITE   = -1
+
 class HttpRequest(object):
     def __init__(self, url, data_or_reader=None, headers=None,
                  origin_req_host=None, unverifiable=False,
                  referer=None, user_agent=None,
                  cookie_or_file=None, accept_encoding=None,
-                 ssl_verify_peer=False, ssl_verify_host=False):
+                 ssl_verify_peer=False, ssl_verify_host=False,
+                 auto_referer=True, follow_location=True,
+                 max_redirects=REDIRECT_INFINITE):
+        
         self.url = url
         self.data_or_reader = data_or_reader
         self.referer = referer
@@ -27,6 +33,9 @@ class HttpRequest(object):
         self.accept_encoding = accept_encoding
         self.ssl_verify_peer = ssl_verify_peer
         self.ssl_verify_host = ssl_verify_host
+        self.auto_referer = auto_referer
+        self.follow_location = follow_location
+        self.max_redirects = max_redirects
 
 class HttpResponse(object):
     def __init__(self, client, request):
@@ -140,6 +149,20 @@ class HttpResponse(object):
         '''
         return self[pycurl.REDIRECT_TIME]
         
+    @property
+    def redirect_count(self):
+        '''
+        The total number of redirections that were actually followed.
+        '''
+        return self[pycurl.REDIRECT_COUNT]
+    
+    @property
+    def redirect_url(self):
+        '''
+        The URL a redirect would take you to.
+        '''
+        return self[pycurl.REDIRECT_URL]
+        
 class HttpClient(object):
     INFOTYPE_NAMES = {
         pycurl.INFOTYPE_DATA_IN: 'data:in',
@@ -155,10 +178,10 @@ class HttpClient(object):
         self.curl = pycurl.Curl()
         
         self.curl.setopt(pycurl.VERBOSE, 1)
-        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)
+        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)                 
         
         self.header = StringIO()
-        self.body = StringIO()
+        self.body = StringIO()        
         
     def __del__(self):
         self.curl.close()
@@ -227,6 +250,10 @@ class HttpClient(object):
             self.curl.setopt(pycurl.SSL_VERIFYHOST, 2)
         else:
             self.curl.setopt(pycurl.SSL_VERIFYHOST, 0)
+            
+        self.curl.setopt(pycurl.AUTOREFERER, 1 if request.auto_referer else 0)
+        self.curl.setopt(pycurl.FOLLOWLOCATION, 1 if request.follow_location else 0)
+        self.curl.setopt(pycurl.MAXREDIRS, request.max_redirects)
 
         self.curl.perform()
         
