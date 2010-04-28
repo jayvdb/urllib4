@@ -10,6 +10,7 @@ except ImportError:
     from StringIO import StringIO
 
 from httplib import HTTPMessage
+from urlparse import urlparse
 
 import pycurl
 
@@ -23,7 +24,8 @@ class HttpRequest(object):
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
                  auto_referer=True, follow_location=True,
-                 max_redirects=REDIRECT_INFINITE):
+                 max_redirects=REDIRECT_INFINITE,
+                 proxy_host=None, proxy_type='http'):
         
         self.url = url
         self.data_or_reader = data_or_reader
@@ -36,6 +38,62 @@ class HttpRequest(object):
         self.auto_referer = auto_referer
         self.follow_location = follow_location
         self.max_redirects = max_redirects
+        self.set_proxy(proxy_host, proxy_type)
+        
+    def get_method(self):
+        '''Return a string indicating the HTTP request method. '''
+        return 'GET' if self.data_or_reader else 'POST'
+    
+    def has_data(self):
+        '''Return whether the instance has a non-None data.'''
+        return self.data_or_reader != None
+    
+    def get_data(self):
+        '''Return the instance's data. '''
+        return self.data_or_reader
+    
+    def get_full_url(self):
+        '''Return the URL given in the constructor.'''
+        return self.url
+    
+    def get_type(self):
+        '''Return the type of the URL -- also known as the scheme. '''
+        return urlparse(self.url).scheme
+        
+    def get_host(self):
+        '''Return the host to which a connection will be made.'''
+        return urlparse(self.url).hostname
+        
+    def get_selector(self):
+        '''Return the selector -- the part of the URL that is sent to the server.'''
+        return urlparse(self.url).path
+
+    def set_proxy(self, host, type='http'):
+        '''
+        Prepare the request by connecting to a proxy server.
+        The host and type will replace those of the instance,
+        and the instance's selector will be the original URL given in the constructor.
+        '''
+        PROXY_TYPES = {
+            'http': pycurl.PROXYTYPE_HTTP,
+            'sock4': pycurl.PROXYTYPE_SOCKS4,
+            'sock5': pycurl.PROXYTYPE_SOCKS5,
+        }
+                
+        self.proxy_auth = None
+        
+        try:
+            o = urlparse(host)
+            
+            if o and o.netloc:
+                host = o.netloc
+                type = o.scheme
+                self.proxy_auth = '%s:%s' % (o.username, o.password)
+        except:
+            pass
+        
+        self.proxy_host = host
+        self.proxy_type = PROXY_TYPES.get(type, pycurl.PROXYTYPE_HTTP)        
 
 class HttpResponse(object):
     def __init__(self, client, request):
@@ -172,7 +230,7 @@ class HttpClient(object):
         pycurl.INFOTYPE_SSL_DATA_IN: 'ssl:in',
         pycurl.INFOTYPE_SSL_DATA_OUT: 'ssl:out',
         pycurl.INFOTYPE_TEXT: 'text',
-    }    
+    }
     
     def __init__(self):
         self.curl = pycurl.Curl()
@@ -254,6 +312,15 @@ class HttpClient(object):
         self.curl.setopt(pycurl.AUTOREFERER, 1 if request.auto_referer else 0)
         self.curl.setopt(pycurl.FOLLOWLOCATION, 1 if request.follow_location else 0)
         self.curl.setopt(pycurl.MAXREDIRS, request.max_redirects)
+        
+        if request.proxy_host:
+            self.curl.setopt(pycurl.PROXY, request.proxy_host)
+            self.curl.setopt(pycurl.PROXYTYPE, request.proxy_type)
+            
+            if request.proxy_auth:
+                self.curl.setopt(pycurl.PROXYUSERPWD, request.proxy_auth)
+        else:
+            self.curl.setopt(pycurl.PROXY, "")
 
         self.curl.perform()
         
