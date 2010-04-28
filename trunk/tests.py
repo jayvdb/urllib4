@@ -6,6 +6,11 @@ import os, os.path
 from hashlib import md5
 import socket
 
+try:
+    import simplejson as json
+except ImportError:
+    import json 
+
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from OpenSSL import SSL
 
@@ -39,7 +44,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         elif self.path == '/redirect/2':
             return self.redirect('/redirect')
         else:
-            return self.response(self.path)
+            headers = {
+                'path': self.path
+            }
+            headers.update(self.headers.items())
+            
+            return self.response(json.dumps(headers))
         
 class TestHTTPServer(HTTPServer):
     def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
@@ -163,11 +173,14 @@ class TestRequst(unittest.TestCase):
     def testProxy(self):
         with TestHTTPServer() as httpd:            
             request = HttpRequest(httpd.root)
-            request.set_proxy('127.0.0.1:80')
+            request.set_proxy('http://user:pass@127.0.0.1:80')
             
             response = HttpClient().perform(request)
             
-            self.assertEqual(httpd.root, response.read())
+            result = json.loads(response.read())
+            
+            self.assertEqual(httpd.root, result['path'])
+            self.assertEqual(0, result['proxy-authorization'].find('Basic'))
             
 class TestResponse(unittest.TestCase):
     def testInfo(self):
