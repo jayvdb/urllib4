@@ -38,6 +38,8 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             return self.redirect('/')
         elif self.path == '/redirect/2':
             return self.redirect('/redirect')
+        else:
+            return self.response(self.path)
         
 class TestHTTPServer(HTTPServer):
     def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
@@ -156,6 +158,16 @@ class TestRequst(unittest.TestCase):
             self.assert_(result.has_key('downloaded'))
             self.assert_(result.has_key('upload_total'))
             self.assert_(result.has_key('uploaded'))
+            
+            
+    def testProxy(self):
+        with TestHTTPServer() as httpd:            
+            request = HttpRequest(httpd.root)
+            request.set_proxy('127.0.0.1:80')
+            
+            response = HttpClient().perform(request)
+            
+            self.assertEqual(httpd.root, response.read())
             
 class TestResponse(unittest.TestCase):
     def testInfo(self):
