@@ -180,7 +180,7 @@ class TestRequst(unittest.TestCase):
             result = json.loads(response.read())
             
             self.assertEqual(httpd.root, result['path'])
-            self.assertEqual(0, result['proxy-authorization'].find('Basic'))
+            self.assertEqual("Basic dXNlcjpwYXNz", result['proxy-authorization'])
             
 class TestResponse(unittest.TestCase):
     def testInfo(self):
