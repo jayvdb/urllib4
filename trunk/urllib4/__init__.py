@@ -68,7 +68,7 @@ class HttpRequest(object):
         '''Return the selector -- the part of the URL that is sent to the server.'''
         return urlparse(self.url).path
 
-    def set_proxy(self, host, type='http'):
+    def set_proxy(self, host, type='http', auth_mode='basic'):
         '''
         Prepare the request by connecting to a proxy server.
         The host and type will replace those of the instance,
@@ -78,6 +78,15 @@ class HttpRequest(object):
             'http': pycurl.PROXYTYPE_HTTP,
             'sock4': pycurl.PROXYTYPE_SOCKS4,
             'sock5': pycurl.PROXYTYPE_SOCKS5,
+        }
+        
+        PROXY_AUTH_MODES = {
+            'basic': pycurl.HTTPAUTH_BASIC,             # HTTP Basic authentication.
+            'digest': pycurl.HTTPAUTH_DIGEST,           # HTTP Digest authentication.
+            'negotiate': pycurl.HTTPAUTH_GSSNEGOTIATE,  # HTTP GSS-Negotiate authentication.
+            'ntlm': pycurl.HTTPAUTH_NTLM,               # HTTP NTLM authentication. 
+            'any': pycurl.HTTPAUTH_ANY,
+            'none': pycurl.HTTPAUTH_NONE,
         }
                 
         self.proxy_auth = None
@@ -93,7 +102,8 @@ class HttpRequest(object):
             pass
         
         self.proxy_host = host
-        self.proxy_type = PROXY_TYPES.get(type, pycurl.PROXYTYPE_HTTP)        
+        self.proxy_type = PROXY_TYPES.get(type.lower(), pycurl.PROXYTYPE_HTTP)
+        self.proxy_auth_mode = PROXY_AUTH_MODES.get(auth_mode.lower(), pycurl.HTTPAUTH_BASIC)
 
 class HttpResponse(object):
     def __init__(self, client, request):
@@ -319,6 +329,9 @@ class HttpClient(object):
             
             if request.proxy_auth:
                 self.curl.setopt(pycurl.PROXYUSERPWD, request.proxy_auth)
+                
+            self.curl.setopt(pycurl.PROXYAUTH, request.proxy_auth_mode)
+                
         else:
             self.curl.setopt(pycurl.PROXY, "")
 
