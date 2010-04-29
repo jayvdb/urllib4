@@ -9,6 +9,7 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import urllib
 from httplib import HTTPMessage
 from urlparse import urlparse
 
@@ -277,7 +278,18 @@ class HttpClient(object):
         self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.write(buf))
         
         if request.data_or_reader:
-            pass
+            if callable(request.data_or_reader):
+                self.curl.setopt(pycurl.POST, 1)
+                self.curl.setopt(pycurl.READFUNCTION, request.data_or_reader)
+            else:
+                if type(request.data_or_reader) == dict:
+                    self.curl.setopt(pycurl.POST, 1)
+                    self.curl.setopt(pycurl.POSTFIELDS, urllib.urlencode(request.data_or_reader))
+                elif type(request.data_or_reader) == list:
+                    self.curl.setopt(pycurl.HTTPPOST, request.data_or_reader)
+                else:
+                    self.curl.setopt(pycurl.POST, 1)
+                    self.curl.setopt(pycurl.POSTFIELDS, str(request.data_or_reader))
         else:
             self.curl.setopt(pycurl.HTTPGET, 1)
         
