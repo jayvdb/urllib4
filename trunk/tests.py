@@ -14,9 +14,10 @@ except ImportError:
 from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from OpenSSL import SSL
 
-from urllib4 import *
-
+import urllib, cgi
 import unittest
+
+from urllib4 import *
 
 class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
@@ -50,6 +51,14 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             headers.update(self.headers.items())
             
             return self.response(json.dumps(headers))
+        
+    def do_POST(self):
+        length = int(self.headers.getheader('content-length'))
+        
+        result = cgi.parse_qs(self.rfile.read(length))
+        result.update(self.headers.items())
+        
+        return self.response(json.dumps(result))
         
 class TestHTTPServer(HTTPServer):
     def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
@@ -117,7 +126,7 @@ class TestSecureHTTPServer(TestHTTPServer):
         return 'https'
 
 class TestUrlLib(unittest.TestCase):
-    def testOpen(self):
+    def testGet(self):
         with TestHTTPServer() as httpd:
             r = urlopen(httpd.root)
             
@@ -127,6 +136,23 @@ class TestUrlLib(unittest.TestCase):
             
             self.assert_(r.headers)
             self.assert_(r.headers.has_key('content-type'))
+            
+    def testPost(self):
+        with TestHTTPServer() as httpd:
+            r = urlopen(httpd.root, {'key': 'value'})
+            
+            self.assert_(httpd.root, r.geturl())
+            self.assertEquals(200, r.code)
+            
+            params = json.loads(r.read())
+            
+            self.assertEquals([u'value'], params['key'])
+            
+            r = urlopen(httpd.root, 'key=value')
+
+            params = json.loads(r.read())
+            
+            self.assertEquals([u'value'], params['key'])
             
     def testSecure(self):
         with TestSecureHTTPServer() as httpd:
@@ -167,11 +193,10 @@ class TestRequst(unittest.TestCase):
             self.assert_(result.has_key('download_total'))
             self.assert_(result.has_key('downloaded'))
             self.assert_(result.has_key('upload_total'))
-            self.assert_(result.has_key('uploaded'))
-            
+            self.assert_(result.has_key('uploaded'))            
             
     def testProxy(self):
-        with TestHTTPServer() as httpd:            
+        with TestHTTPServer() as httpd:
             request = HttpRequest(httpd.root)
             request.set_proxy('http://user:pass@127.0.0.1:80')
             
