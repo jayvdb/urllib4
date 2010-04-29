@@ -56,9 +56,12 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         length = int(self.headers.getheader('content-length'))
         
         result = cgi.parse_qs(self.rfile.read(length))
-        result.update(self.headers.items())
+        result.update(self.headers.items())        
         
         return self.response(json.dumps(result))
+        
+    def do_TEST(self):
+        return self.response('test')
         
 class TestHTTPServer(HTTPServer):
     def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
@@ -193,7 +196,21 @@ class TestRequst(unittest.TestCase):
             self.assert_(result.has_key('download_total'))
             self.assert_(result.has_key('downloaded'))
             self.assert_(result.has_key('upload_total'))
-            self.assert_(result.has_key('uploaded'))            
+            self.assert_(result.has_key('uploaded'))
+            
+    def testHeader(self):
+        with TestHTTPServer() as httpd:
+            request = HttpRequest(httpd.root + 'post', headers={'key': 'value'})
+            request.has_header('key')
+            request.add_header('name', 'value')
+            request.has_header('name')
+            
+            response = HttpClient().perform(request)
+            
+            result = json.loads(response.read())
+            
+            self.assertEqual('value', result['key'])
+            self.assertEqual('value', result['name'])
             
     def testProxy(self):
         with TestHTTPServer() as httpd:
@@ -206,6 +223,12 @@ class TestRequst(unittest.TestCase):
             
             self.assertEqual(httpd.root, result['path'])
             self.assertEqual("Basic dXNlcjpwYXNz", result['proxy-authorization'])
+            
+    def testCustomRequest(self):
+        with TestHTTPServer() as httpd:
+            request = HttpRequest(httpd.root, http_custom_request='TEST')
+            response = HttpClient().perform(request)
+            self.assertEqual("test", response.read())
             
 class TestResponse(unittest.TestCase):
     def testInfo(self):
