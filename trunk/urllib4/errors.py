@@ -16,11 +16,15 @@ class PycurlError(URLError):
     def convert(code, msg):
         exc = PYCURL_ERRORS.get(code)
         
-        raise exc(code, msg) if exc else URLError(msg)
+        raise exc(code, msg) if exc else PycurlError(code, msg)
+
+class UnsupportedProtocol(PycurlError):
+    pass
 
 class TooManyRedirects(PycurlError):
     pass
 
 PYCURL_ERRORS = {
-    pycurl.E_TOO_MANY_REDIRECTS: TooManyRedirects,
+    pycurl.E_UNSUPPORTED_PROTOCOL: UnsupportedProtocol,
+    pycurl.E_TOO_MANY_REDIRECTS: TooManyRedirects,    
 }
