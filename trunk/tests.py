@@ -5,6 +5,7 @@ import sys
 import os, os.path
 from hashlib import md5
 import socket
+import logging
 
 try:
     import simplejson as json
@@ -15,6 +16,8 @@ from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler
 from OpenSSL import SSL
 
 import urllib, cgi
+import pycurl
+
 import unittest
 
 from urllib4 import *
@@ -267,14 +270,14 @@ class TestResponse(unittest.TestCase):
             try:
                 HttpClient().perform(HttpRequest(url, max_redirects=0))
                 self.fail()
-            except Exception, (code, msg):
-                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, code)
+            except TooManyRedirects, e:
+                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, e.code)
                 
             try:
                 HttpClient().perform(HttpRequest(httpd.root + 'redirect/2', max_redirects=1))
                 self.fail()
-            except Exception, (code, msg):
-                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, code)
+            except TooManyRedirects, e:
+                self.assertEquals(pycurl.E_TOO_MANY_REDIRECTS, e.code)
                 
             r = HttpClient().perform(HttpRequest(httpd.root + 'redirect/2', max_redirects=2))
             
