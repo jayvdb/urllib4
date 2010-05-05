@@ -67,8 +67,11 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         return self.response('test')
         
 class TestHTTPServer(HTTPServer):
-    def __init__(self, port=80, host='127.0.0.1', handler=TestHTTPRequestHandler):
+    def __init__(self, port=80, host='localhost', handler=TestHTTPRequestHandler):
         HTTPServer.__init__(self, (host, port), handler)
+        
+        self._port=port
+        self._host=host
         
     def run(self):
         try:
@@ -94,11 +97,11 @@ class TestHTTPServer(HTTPServer):
     
     @property
     def host(self):
-        return self.socket.getsockname()[0]
+        return self._host
         
     @property
     def port(self):
-        return self.socket.getsockname()[1]
+        return self._port
     
     @property
     def root(self):
@@ -116,7 +119,7 @@ class TestSecureHTTPRequestHandler(TestHTTPRequestHandler):
         self.wfile = socket._fileobject(self.request, "wb", self.wbufsize)
 
 class TestSecureHTTPServer(TestHTTPServer):
-    def __init__(self, port=443, host='127.0.0.1', handler=TestSecureHTTPRequestHandler):
+    def __init__(self, port=443, host='localhost', handler=TestSecureHTTPRequestHandler):
         TestHTTPServer.__init__(self, port, host, handler)
         
         ctx = SSL.Context(SSL.SSLv23_METHOD)
@@ -284,6 +287,30 @@ class TestResponse(unittest.TestCase):
             self.assert_(url, r.geturl())
             self.assertEquals(200, r.code)
             self.assert_(len(r.read()) > 10)
+            
+class TestDnsCache(unittest.TestCase):
+    def testCache(self):
+        c = DnsCache()
+        
+        self.assertEquals({}, c.cache)
+        
+        self.assertEqual(['127.0.0.1'], c.get('localhost'))
+        self.assertEqual(['127.0.0.1'], c.cache['localhost'])
+        
+    def testHost(self):
+        c = DnsCache()
+        
+        self.assertEquals({}, c.cache)
+        
+        with TestHTTPServer() as httpd:
+            response = HttpClient(dnscache=c).get(httpd.root + 'host')
+            
+            self.assertEquals(200, response.code)
+            
+        result = json.loads(response.read())
+            
+        self.assertEqual(['127.0.0.1'], c.cache['localhost'])
+        self.assertEqual('localhost', result['host'])
             
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,

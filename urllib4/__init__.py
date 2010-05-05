@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 from request import HttpRequest, REDIRECT_INFINITE, REDIRECT_REFUSE
 from response import HttpResponse
-from errors import TooManyRedirects
+from errors import UnsupportedProtocol, TooManyRedirects
 from client import HttpClient
 from fetcher import HttpFetcher
+from dnscache import DnsCache
 
 __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
-           'HttpResponse', 'HttpClient', 'HttpFetcher',
-           'TooManyRedirects',
+           'HttpResponse', 'HttpClient', 'HttpFetcher', 'DnsCache',
+           'UnsupportedProtocol', 'TooManyRedirects',
            'Request', 'urlopen']
 
 Request = HttpRequest

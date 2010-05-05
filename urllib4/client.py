@@ -7,6 +7,12 @@ try:
 except ImportError:
     from StringIO import StringIO
     
+try:
+    from gurl import Url
+    urlparse = Url
+except ImportError:
+    from urlparse import urlparse
+    
 import urllib
 
 import pycurl
@@ -26,14 +32,16 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self):
+    def __init__(self, dnscache=None):
         self.curl = pycurl.Curl()
         
         self.curl.setopt(pycurl.VERBOSE, 1)
         self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)                 
         
         self.header = StringIO()
-        self.body = StringIO()        
+        self.body = StringIO()
+        
+        self.dnscache = dnscache
         
     def __del__(self):
         self.curl.close()
@@ -55,8 +63,19 @@ class HttpClient(object):
     def perform(self, request, progress_callback=None):
         self.header.seek(0)
         self.body.seek(0)
+        
+        url = request.url
+        
+        if self.dnscache:
+            o = urlparse(url)
+            
+            addresses = self.dnscache.get(o.hostname)
+            
+            if addresses:
+                url = url.replace(o.hostname, addresses[0])
+                request.add_header('host', o.hostname)
 
-        self.curl.setopt(pycurl.URL, request.url)
+        self.curl.setopt(pycurl.URL, url)
         self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.write(buf))
         self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.write(buf))
         
