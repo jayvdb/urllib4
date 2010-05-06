@@ -45,37 +45,33 @@ class HttpClient(object):
         self.header.close()
         self.body.close()        
         
-    def log(self, type, msg):
+    def _log(self, type, msg):
         if [c for c in msg if c not in string.printable]:
             logging.debug("%s: %s", self.INFOTYPE_NAMES[type], binascii.hexlify(msg))
         else:
             logging.debug("%s: %s", self.INFOTYPE_NAMES[type], msg)
-                    
-    def get(self, url, progress_callback=None):
-        return self.perform(HttpRequest(url), progress_callback)
+            
+    def _cleanup(self):
+        self.curl.setopt(pycurl.DEBUGFUNCTION, lambda type, msg: None)
+        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: None)
+        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: None)
+        self.curl.setopt(pycurl.READFUNCTION, lambda size: None)
+        self.curl.setopt(pycurl.PROGRESSFUNCTION, lambda download_total, downloaded, upload_total, uploaded: None)
+        self.curl.setopt(pycurl.IOCTLFUNCTION, lambda cmd: None)
         
-    def post(self, url, data_or_reader, progress_callback=None):
-        return self.perform(HttpRequest(url, data_or_reader), progress_callback)
-        
-    def perform(self, request, progress_callback=None):
-        self.header.seek(0)
-        self.body.seek(0)
-        
+    def _apply_debug_setting(self, request):
         self.curl.setopt(pycurl.VERBOSE, 1)
-        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)        
+        self.curl.setopt(pycurl.DEBUGFUNCTION, self._log)
         
-        url = request.url
+    def _apply_progress_setting(self, progress_callback):
+        if progress_callback:
+            self.curl.setopt(pycurl.NOPROGRESS, 0)
+            self.curl.setopt(pycurl.PROGRESSFUNCTION, progress_callback)
+        else:
+            self.curl.setopt(pycurl.NOPROGRESS, 1)
         
-        if self.dnscache:
-            o = urlparse(url)
-            
-            addresses = self.dnscache.get(o.hostname)
-            
-            if addresses:
-                url = url.replace(o.hostname, addresses[0])
-                request.add_header('host', o.hostname)
-
-        self.curl.setopt(pycurl.URL, url)
+    def _apply_request_setting(self, request):
+        self.curl.setopt(pycurl.URL, request.url)
         self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.write(buf))
         self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.write(buf))
         
@@ -94,19 +90,18 @@ class HttpClient(object):
             self.curl.setopt(pycurl.HTTPGET, 1)
             
         self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key.capitalize(), value) for key, value in request.headers.items()])
-        
-        if progress_callback:
-            self.curl.setopt(pycurl.NOPROGRESS, 0)
-            self.curl.setopt(pycurl.PROGRESSFUNCTION, progress_callback)
-        else:
-            self.curl.setopt(pycurl.NOPROGRESS, 1)
+                
+    def _apply_dnscache_setting(self, request):
+        if self.dnscache:
+            o = urlparse(request.url)
             
-        if request.referer:
-            self.curl.setopt(pycurl.REFERER, request.referer)
-
-        if request.user_agent:
-            self.curl.setopt(pycurl.USERAGENT, request.user_agent)
+            addresses = self.dnscache.get(o.hostname)
             
+            if addresses:
+                request.url = request.url.replace(o.hostname, addresses[0])
+                request.add_header('host', o.hostname)
+                
+    def _apply_network_setting(self, request):
         if request.interface:
             self.curl.setopt(pycurl.INTERFACE, request.interface)
 
@@ -118,24 +113,8 @@ class HttpClient(object):
             
         if request.tcp_nodelay:
             self.curl.setopt(pycurl.TCP_NODELAY, request.tcp_nodelay)
-        
-        if request.cookie_or_file:
-            if os.path.exists(request.cookie_or_file):
-                self.curl.setopt(pycurl.COOKIEFILE, request.cookie_or_file)
-            else:
-                if issubclass(type(request.cookie_or_file), dict):
-                    cookie = ';'.join(['%s=%s' % (k, v) for k, v in request.cookie_or_file.items()])
-                else:
-                    cookie = request.cookie_or_file
-                    
-                self.curl.setopt(pycurl.COOKIE, cookie)
-                
-        if request.accept_encoding:
-            self.curl.setopt(pycurl.ENCODING, request.accept_encoding)
-            self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 1)
-        else:
-            self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 0)
             
+    def _apply_ssl_setting(self, request):
         if request.ssl_verify_peer:
             self.curl.setopt(pycurl.SSL_VERIFYPEER, 1)
             
@@ -150,10 +129,7 @@ class HttpClient(object):
         else:
             self.curl.setopt(pycurl.SSL_VERIFYHOST, 0)
             
-        self.curl.setopt(pycurl.AUTOREFERER, 1 if request.auto_referer else 0)
-        self.curl.setopt(pycurl.FOLLOWLOCATION, 1 if request.follow_location else 0)
-        self.curl.setopt(pycurl.MAXREDIRS, request.max_redirects)
-        
+    def _apply_auth_setting(self, request):
         if request.username and request.password:
             if request.realm:
                 self.curl.setopt(pycurl.USERPWD, "%s/%s:%s" % (request.realm, request.username, request.password))
@@ -162,12 +138,42 @@ class HttpClient(object):
             
         self.curl.setopt(pycurl.HTTPAUTH, request.http_auth_mode)
         
+    def _apply_redirect_setting(self, request):
+        self.curl.setopt(pycurl.AUTOREFERER, 1 if request.auto_referer else 0)
+        self.curl.setopt(pycurl.FOLLOWLOCATION, 1 if request.follow_location else 0)
+        self.curl.setopt(pycurl.MAXREDIRS, request.max_redirects)
+        
+    def _apply_http_setting(self, request):                       
         if request.http_version:
             self.curl.setopt(pycurl.HTTP_VERSION, request.http_version)
         
         if request.http_custom_request:
             self.curl.setopt(pycurl.CUSTOMREQUEST, request.http_custom_request)
+                    
+        if request.referer:
+            self.curl.setopt(pycurl.REFERER, request.referer)
+
+        if request.user_agent:
+            self.curl.setopt(pycurl.USERAGENT, request.user_agent)
+
+        if request.accept_encoding:
+            self.curl.setopt(pycurl.ENCODING, request.accept_encoding)
+            self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 1)
+        else:
+            self.curl.setopt(pycurl.HTTP_CONTENT_DECODING, 0)
         
+        if request.cookie_or_file:
+            if os.path.exists(request.cookie_or_file):
+                self.curl.setopt(pycurl.COOKIEFILE, request.cookie_or_file)
+            else:
+                if issubclass(type(request.cookie_or_file), dict):
+                    cookie = ';'.join(['%s=%s' % (k, v) for k, v in request.cookie_or_file.items()])
+                else:
+                    cookie = request.cookie_or_file
+                    
+                self.curl.setopt(pycurl.COOKIE, cookie)
+        
+    def _apply_proxy_setting(self, request):
         if request.proxy_host:
             self.curl.setopt(pycurl.PROXY, request.proxy_host)
             self.curl.setopt(pycurl.PROXYTYPE, request.proxy_type)
@@ -180,6 +186,27 @@ class HttpClient(object):
         else:
             self.curl.setopt(pycurl.PROXY, "")
 
+    def get(self, url, progress_callback=None):
+        return self.perform(HttpRequest(url), progress_callback)
+        
+    def post(self, url, data_or_reader, progress_callback=None):
+        return self.perform(HttpRequest(url, data_or_reader), progress_callback)
+        
+    def perform(self, request, progress_callback=None):
+        self.header.seek(0)
+        self.body.seek(0)
+        
+        self._apply_debug_setting(request)
+        self._apply_progress_setting(progress_callback)
+        self._apply_dnscache_setting(request)
+        self._apply_request_setting(request)
+        self._apply_network_setting(request)            
+        self._apply_http_setting(request)
+        self._apply_ssl_setting(request)
+        self._apply_redirect_setting(request)        
+        self._apply_auth_setting(request)        
+        self._apply_proxy_setting(request)
+
         try:
             self.curl.perform()
         except pycurl.error, (code, msg):
@@ -188,12 +215,7 @@ class HttpClient(object):
         self.header.seek(0)
         self.body.seek(0)
         
-        self.curl.setopt(pycurl.DEBUGFUNCTION, lambda type, msg: None)
-        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: None)
-        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: None)
-        self.curl.setopt(pycurl.READFUNCTION, lambda size: None)
-        self.curl.setopt(pycurl.PROGRESSFUNCTION, lambda download_total, downloaded, upload_total, uploaded: None)
-        self.curl.setopt(pycurl.IOCTLFUNCTION, lambda cmd: None)
-        
+        self._cleanup()
+                
         return HttpResponse(self, request)
         
