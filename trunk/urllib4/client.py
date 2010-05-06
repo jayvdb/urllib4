@@ -70,8 +70,7 @@ class HttpClient(object):
         else:
             self.curl.setopt(pycurl.NOPROGRESS, 1)
         
-    def _apply_request_setting(self, request):
-        self.curl.setopt(pycurl.URL, request.url)
+    def _apply_request_setting(self, request):        
         self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.write(buf))
         self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.write(buf))
         
@@ -98,8 +97,11 @@ class HttpClient(object):
             addresses = self.dnscache.get(o.hostname)
             
             if addresses:
-                request.url = request.url.replace(o.hostname, addresses[0])
                 request.add_header('host', o.hostname)
+                
+                return request.url.replace(o.hostname, addresses[0])
+                
+        return request.url
                 
     def _apply_network_setting(self, request):
         if request.interface:
@@ -198,7 +200,11 @@ class HttpClient(object):
         
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
-        self._apply_dnscache_setting(request)
+        
+        url = self._apply_dnscache_setting(request)
+        
+        self.curl.setopt(pycurl.URL, url)
+        
         self._apply_request_setting(request)
         self._apply_network_setting(request)            
         self._apply_http_setting(request)
