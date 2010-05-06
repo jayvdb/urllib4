@@ -99,7 +99,7 @@ class HttpResponse(object):
     def primary_ip(self):
         if hasattr(socket, "fromfd"):
             if self.last_socket >= 0:
-                sock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
+                sock = socket.fromfd(self.last_socket, socket.AF_INET, socket.SOCK_STREAM)
                 
                 if sock:
                     return sock.getpeername()[0]                    
