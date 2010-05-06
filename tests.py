@@ -248,6 +248,7 @@ class TestResponse(unittest.TestCase):
             self.assert_(response.starttransfer_time >= 0)
             self.assert_(response.total_time >= 0)
             self.assert_(response.redirect_time >= 0)
+            self.assertEqual('127.0.0.1', response.primary_ip)
             
     def testRedirect(self):
         with TestHTTPServer() as httpd:

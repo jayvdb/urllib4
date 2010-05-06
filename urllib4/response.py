@@ -1,5 +1,12 @@
 #!/usr/bin/env python
+import socket
+import logging
 
+try:
+    from gurl import Url
+    urlparse = Url
+except ImportError:
+    from urlparse import urlparse
 
 import pycurl
 
@@ -87,6 +94,26 @@ class HttpResponse(object):
                 
     def geturl(self):
         return self.url
+    
+    @property
+    def primary_ip(self):
+        if hasattr(socket, "fromfd"):
+            if self.last_socket >= 0:
+                sock = socket.fromfd(fd, socket.AF_INET, socket.SOCK_STREAM)
+                
+                if sock:
+                    return sock.getpeername()[0]                    
+                            
+        try:
+            domain = urlparse(self.url).hostname
+            
+            if domain:
+                if self.client.dnscache:
+                    return self.client.dnscache.get(domain)
+                else:
+                    return socket.gethostbyname(domain) if domain else None
+        except socket.gaierror:
+            return None
 
     @property
     def headers(self):
