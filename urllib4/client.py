@@ -32,21 +32,18 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None):
-        self.curl = pycurl.Curl()
-        
-        self.curl.setopt(pycurl.VERBOSE, 1)
-        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)                 
-        
-        self.header = StringIO()
-        self.body = StringIO()
-        
+    def __init__(self, dnscache=None):        
         self.dnscache = dnscache
+
+        self.curl = pycurl.Curl()
+                
+        self.header = StringIO()
+        self.body = StringIO()        
         
     def __del__(self):
         self.curl.close()
         self.header.close()
-        self.body.close()
+        self.body.close()        
         
     def log(self, type, msg):
         if [c for c in msg if c not in string.printable]:
@@ -63,6 +60,9 @@ class HttpClient(object):
     def perform(self, request, progress_callback=None):
         self.header.seek(0)
         self.body.seek(0)
+        
+        self.curl.setopt(pycurl.VERBOSE, 1)
+        self.curl.setopt(pycurl.DEBUGFUNCTION, self.log)        
         
         url = request.url
         
@@ -187,6 +187,13 @@ class HttpClient(object):
         
         self.header.seek(0)
         self.body.seek(0)
+        
+        self.curl.setopt(pycurl.DEBUGFUNCTION, lambda type, msg: None)
+        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: None)
+        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: None)
+        self.curl.setopt(pycurl.READFUNCTION, lambda size: None)
+        self.curl.setopt(pycurl.PROGRESSFUNCTION, lambda download_total, downloaded, upload_total, uploaded: None)
+        self.curl.setopt(pycurl.IOCTLFUNCTION, lambda cmd: None)
         
         return HttpResponse(self, request)
         

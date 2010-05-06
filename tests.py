@@ -288,6 +288,17 @@ class TestResponse(unittest.TestCase):
             self.assertEquals(200, r.code)
             self.assert_(len(r.read()) > 10)
             
+class TestClient(unittest.TestCase):
+    def testDestructor(self):
+        import gc
+        
+        with TestHTTPServer() as httpd:
+            HttpClient().get(httpd.root + 'host')
+            
+            gc.collect()
+            
+            self.assertFalse(gc.garbage)
+            
 class TestDnsCache(unittest.TestCase):
     def testCache(self):
         c = DnsCache()
