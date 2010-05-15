@@ -14,13 +14,16 @@ class DnsCache(object):
         with self.cache_lock:
             addresses = self.cache.get(domain)
             
-        if not addresses: 
+        if not addresses:
             addresses = self.query(domain)
-                
-            with self.cache_lock:
-                self.cache[domain] = addresses
+            
+            self.set(domain, addresses)
                 
         return addresses
+    
+    def set(self, domain, addresses):
+        with self.cache_lock:
+            self.cache[domain] = addresses
     
     def query(self, domain):
         #TODO return a wrapped async DNS record

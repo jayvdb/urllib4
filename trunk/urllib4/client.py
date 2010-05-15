@@ -20,6 +20,7 @@ import pycurl
 from request import HttpRequest
 from response import HttpResponse
 from errors import PycurlError
+from flowcontrol import SiteProfile
 
 class HttpClient(object):
     INFOTYPE_NAMES = {
@@ -32,14 +33,15 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None):        
+    def __init__(self, dnscache=None, profile=None):        
         self.dnscache = dnscache
+        self.profile = profile
 
         self.curl = pycurl.Curl()
                 
         self.header = StringIO()
-        self.body = StringIO()        
-        
+        self.body = StringIO()
+                
     def __del__(self):
         self.curl.close()
         self.header.close()
@@ -91,17 +93,17 @@ class HttpClient(object):
         self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key.capitalize(), value) for key, value in request.headers.items()])
                 
     def _apply_dnscache_setting(self, request):
+        o = urlparse(request.url)
+        
         if self.dnscache:
-            o = urlparse(request.url)
-            
             addresses = self.dnscache.get(o.hostname)
             
             if addresses:
                 request.add_header('host', o.hostname)
                 
-                return request.url.replace(o.hostname, addresses[0])
+                return o.hostname, request.url.replace(o.hostname, addresses[0])
                 
-        return request.url
+        return o.hostname, request.url
                 
     def _apply_network_setting(self, request):
         if request.interface:
@@ -201,7 +203,10 @@ class HttpClient(object):
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
         
-        url = self._apply_dnscache_setting(request)
+        domain, url = self._apply_dnscache_setting(request)
+        
+        profile = self.profile or SiteProfile.get(domain)
+        profile.apply(self.curl)
         
         self.curl.setopt(pycurl.URL, url)
         

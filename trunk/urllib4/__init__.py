@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 from request import HttpRequest, REDIRECT_INFINITE, REDIRECT_REFUSE
 from response import HttpResponse
-from errors import UnsupportedProtocol, TooManyRedirects
+from errors import *
 from client import HttpClient
 from fetcher import HttpFetcher
 from dnscache import DnsCache
+from flowcontrol import SiteProfile
 
 __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
-           'HttpResponse', 'HttpClient', 'HttpFetcher', 'DnsCache',
-           'UnsupportedProtocol', 'TooManyRedirects',
-           'Request', 'urlopen']
+           'HttpResponse', 'HttpClient', 'HttpFetcher',
+           'DnsCache', 'SiteProfile',
+           'UnsupportedProtocol', 'TooManyRedirects', 'ConnectError',
+           'ProxyResolveError', 'HostResolveError', 'OperationTimeoutError',
+           'Request', 'urlopen',]
 
 Request = HttpRequest
 
