@@ -3,6 +3,7 @@ from __future__ import with_statement
 
 import sys
 import os, os.path
+import time
 from hashlib import md5
 import socket
 import logging
@@ -47,6 +48,9 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
             return self.redirect('/')
         elif self.path == '/redirect/2':
             return self.redirect('/redirect')
+        elif self.path == '/slow':
+            time.sleep(5)
+            return self.response("finished")
         else:
             headers = {
                 'path': self.path
@@ -323,6 +327,34 @@ class TestDnsCache(unittest.TestCase):
             
         self.assertEqual(['127.0.0.1'], c.cache['localhost'])
         self.assertEqual('localhost', result['host'])
+        
+class TestFlowControl(unittest.TestCase):
+    def testTimeout(self):
+        profile = SiteProfile.get('test', timeout_ms=1000)
+        
+        self.assertEqual(None, profile.timeout)
+        self.assertEqual(1000, profile.timeout_ms)
+        
+        cache = DnsCache()
+        cache.set('test', ['127.0.0.1'])
+        
+        with TestHTTPServer() as httpd:        
+            ts = time.clock()
+                    
+            try:
+                HttpClient(dnscache=cache, profile=profile).get('http://test/slow')
+                
+                self.fail()
+            except OperationTimeoutError:
+                pass
+            
+            self.assert_(time.clock() - ts < 5)
+            
+            SiteProfile.get('test').timeout = 10
+            
+            r = HttpClient(dnscache=cache).get('http://test/slow')
+            
+            self.assertEqual('finished', r.read())
             
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
