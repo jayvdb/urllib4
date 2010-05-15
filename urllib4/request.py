@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+try:
+    from gurl import Url
+    urlparse = Url
+except ImportError:
+    from urlparse import urlparse
+
 import pycurl
 
 REDIRECT_REFUSE     = 0
@@ -36,10 +42,10 @@ class HttpRequest(object):
         self.http_custom_request = http_custom_request
         self.username = username
         self.password = password
-        self.http_auth_mode = self.convert_auth_mode(http_auth_mode)        
+        self.http_auth_mode = self._convert_auth_mode(http_auth_mode)        
         self.set_proxy(proxy_host, proxy_type, proxy_auth_mode)
         
-    def convert_auth_mode(self, modes):
+    def _convert_auth_mode(self, modes):
         AUTH_MODES = {
             'basic': pycurl.HTTPAUTH_BASIC,             # HTTP Basic authentication.
             'digest': pycurl.HTTPAUTH_DIGEST,           # HTTP Digest authentication.
@@ -59,6 +65,9 @@ class HttpRequest(object):
             auth_mode |= AUTH_MODES.get(mode.lower(), 0)
             
         return auth_mode
+    
+    def hostname(self):
+        return urlparse(self.url).hostname
     
     def get_method(self):
         '''Return a string indicating the HTTP request method. '''
@@ -126,7 +135,7 @@ class HttpRequest(object):
         
         self.proxy_host = host
         self.proxy_type = PROXY_TYPES.get(type.lower(), pycurl.PROXYTYPE_HTTP)
-        self.proxy_auth_mode = self.convert_auth_mode(auth_mode)
+        self.proxy_auth_mode = self._convert_auth_mode(auth_mode)
         
     def set_http_version(self, version):
         HTTP_VERSIONS = {
