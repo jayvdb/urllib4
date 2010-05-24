@@ -8,6 +8,7 @@ import time
 from hashlib import md5
 import socket
 import logging
+import threading
 
 try:
     import simplejson as json
@@ -414,6 +415,36 @@ class TestConnectionPool(unittest.TestCase):
 
         self.assert_(conn)
         self.assert_(conn.connected)
+        
+        self.assertEquals(None, pool.get(0.1))
+        
+        
+    def testMultiThreads(self):
+        pool = ConnectionPool(FakeConnection, 2, 4, multithreads=True)
+        
+        conns = []
+        
+        for i in range(pool.max_connections):
+            conns.append(pool.get())
+            
+        self.assertEquals(None, pool.get(0.1))
+            
+        t = threading.Thread(target=lambda: conns.append(pool.get()))
+        t.start()
+        
+        self.assertEquals(pool.max_connections, len(conns))
+        
+        conn = conns.pop()
+        
+        self.assertEquals(pool.max_connections-1, len(conns))
+        
+        del conn
+        
+        gc.collect()
+        
+        t.join()
+        
+        self.assertEquals(pool.max_connections, len(conns))
                 
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
