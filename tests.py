@@ -3,6 +3,7 @@ from __future__ import with_statement
 
 import sys
 import os, os.path
+import gc
 import time
 from hashlib import md5
 import socket
@@ -356,6 +357,64 @@ class TestFlowControl(unittest.TestCase):
             
             self.assertEqual('finished', r.read())
             
+class FakeConnection(BaseConnection):
+    def __init__(self):
+        BaseConnection.__init__(self)
+        
+        self._connected = False
+        
+    @property
+    def connected(self):
+        return self._connected
+        
+    def reconnect(self):
+        self._connected = True
+        
+        return self._connected
+            
+class TestConnectionPool(unittest.TestCase):
+    def testGet(self):
+        pool = ConnectionPool(FakeConnection, 2, 4)
+        
+        self.assert_(pool)
+        self.assertEquals(2, len(pool))
+        
+        conn = pool.get()
+
+        self.assert_(conn)
+        self.assert_(conn.connected)
+        
+        self.assert_(pool)
+        self.assertEquals(2, len(pool))
+        
+        conn2 = pool.get()
+
+        self.assert_(conn2)
+        self.assert_(conn2.connected)
+        
+        self.assert_(pool)
+        self.assertEquals(2, len(pool))
+        
+        conn3 = pool.get()
+        conn4 = pool.get()
+
+        self.assertFalse(pool)
+        self.assertEquals(4, len(pool))
+        
+        self.assertEquals(None, pool.get(ConnectionPool.WAIT_NERVER))
+        
+        del conn
+        
+        gc.collect()
+        
+        self.assert_(pool)
+        self.assertEquals(4, len(pool))
+            
+        conn = pool.get()
+
+        self.assert_(conn)
+        self.assert_(conn.connected)
+                
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
                         format='%(asctime)s %(levelname)s %(message)s')

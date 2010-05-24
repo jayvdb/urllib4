@@ -6,12 +6,14 @@ from client import HttpClient
 from fetcher import HttpFetcher
 from dnscache import DnsCache
 from flowcontrol import SiteProfile
+from connpool import BaseConnection, ConnectionPool
 
 __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
            'HttpResponse', 'HttpClient', 'HttpFetcher',
            'DnsCache', 'SiteProfile',
            'UnsupportedProtocol', 'TooManyRedirects', 'ConnectError',
            'ProxyResolveError', 'HostResolveError', 'OperationTimeoutError',
+           'BaseConnection', 'ConnectionPool',
            'Request', 'urlopen',]
 
 Request = HttpRequest
