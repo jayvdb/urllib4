@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import with_statement
 
+import time
 from datetime import datetime
 import threading
 import weakref
@@ -20,7 +21,12 @@ class BaseConnection(object):
     def reconnect(self):
         raise NotImplemented()
         
+    def reset(self):
+        pass
+        
     def __del__(self):
+        self.reset()
+        
         if hasattr(self, '_pool'):
             self._pool.put(self)
 
@@ -92,15 +98,27 @@ class ConnectionPool(object):
                 
                 # wait for idle connection, and try again without wait
                 if self.idle_notify:
+                    if timeout:
+                        start_time = time.clock()
+                    
                     self.idle_notify.wait(timeout)
                     
-                    return self.get(ConnectionPool.WAIT_NERVER)
+                    if timeout:
+                        timeout = timeout - (time.clock() - start_time)
+                        
+                        if timeout < 0:
+                            timeout = ConnectionPool.WAIT_NERVER
+                    
+                    continue
                 else:
                     break
                     
         if conn:
             conn._pool = self
             
+            if self.idle_notify:
+                self.idle_notify.clear()
+                
             # add connection to used pool for tracing
             with self.lock:
                 self.used_conns[conn] = datetime.now()
@@ -109,7 +127,8 @@ class ConnectionPool(object):
     
     def put(self, conn):
         with self.lock:
-            self.idle_conns.append(conn)
+            if len(self.idle_conns) < self.min_connections:
+                self.idle_conns.append(conn)
             
             if self.used_conns.has_key(conn):
                 del self.used_conns[conn]
