@@ -90,7 +90,7 @@ class ConnectionPool(object):
                 # if no idle connection and not to many used, try to create one                
                 if len(self.used_conns) < self.max_connections:
                     conn = self.connection_creator()
-                    break
+                    break                
                 
                 # if too many used connections, return None for nowait 
                 if timeout == ConnectionPool.WAIT_NERVER:
@@ -101,7 +101,7 @@ class ConnectionPool(object):
                     if timeout:
                         start_time = time.clock()
                     
-                    self.idle_notify.wait(timeout)
+                    self.idle_notify.wait(timeout)                    
                     
                     if timeout:
                         timeout = timeout - (time.clock() - start_time)
@@ -114,10 +114,7 @@ class ConnectionPool(object):
                     break
                     
         if conn:
-            conn._pool = self
-            
-            if self.idle_notify:
-                self.idle_notify.clear()
+            conn._pool = self            
                 
             # add connection to used pool for tracing
             with self.lock:
@@ -133,6 +130,7 @@ class ConnectionPool(object):
             if self.used_conns.has_key(conn):
                 del self.used_conns[conn]
             
-        if self.idle_notify:
-            self.idle_notify.set()
- 
+            if self.idle_notify:
+                self.idle_notify.set()
+                self.idle_notify.clear()
+     

@@ -445,7 +445,19 @@ class TestConnectionPool(unittest.TestCase):
         t.join()
         
         self.assertEquals(pool.max_connections, len(conns))
-                
+        
+        conns = []
+        
+        threads = [threading.Thread(target=lambda: conns.append(pool.get())) for i in range(pool.max_connections)]
+        
+        [t.start() for t in threads]
+        
+        gc.collect()
+        
+        [t.join() for t in threads]
+        
+        self.assertEquals(pool.max_connections, len(conns))
+        
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
                         format='%(asctime)s %(levelname)s %(message)s')
