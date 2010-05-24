@@ -95,6 +95,8 @@ class ConnectionPool(object):
                     self.idle_notify.wait(timeout)
                     
                     return self.get(ConnectionPool.WAIT_NERVER)
+                else:
+                    break
                     
         if conn:
             conn._pool = self
