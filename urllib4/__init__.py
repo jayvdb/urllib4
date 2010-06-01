@@ -18,7 +18,7 @@ __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
 
 Request = HttpRequest
 
-def urlopen(url_or_request, data_or_reader=None, timeout=None):
+def urlopen(url_or_request, data_or_reader=None, timeout=None, guess_encoding=False):
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
@@ -27,4 +27,4 @@ def urlopen(url_or_request, data_or_reader=None, timeout=None):
     if timeout:
         SiteProfile.get(request.hostname).timeout = timeout
         
-    return HttpClient().perform(request)
+    return HttpClient(guess_encoding=guess_encoding).perform(request)

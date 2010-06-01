@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python
 from __future__ import with_statement
 
@@ -25,13 +26,15 @@ import unittest
 
 from urllib4 import *
 
+from urllib4.guessencoding import *
+
 class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logging.info(format, *args)
 
     def response(self, data, mimetype='text/html'):
         self.send_response(200)
-        self.send_header("Content-type", mimetype)
+        self.send_header("Content-Type", mimetype)
         self.send_header("Content-Length", len(data))
         self.send_header("ETag", md5(data).hexdigest())
         self.end_headers()
@@ -53,6 +56,15 @@ class TestHTTPRequestHandler(BaseHTTPRequestHandler):
         elif self.path == '/slow':
             time.sleep(5)
             return self.response("finished")
+        elif self.path == '/encoding/gb2312/meta':
+            self.response(u"""<html>
+<meta http-equiv="Content-Type" content="text/html; charset=gb2312" />
+中文测试
+</html>""".encode('gb2312'))
+        elif self.path == '/encoding/utf-8/text':
+            self.response(u"<html>中文测试</html>".encode('utf-8'))
+        elif self.path == '/encoding/utf-8/header':
+            self.response(u"<html>中文测试</html>".encode('utf-8'), mimetype='text/html; charset=gb2312')            
         else:
             headers = {
                 'path': self.path
@@ -458,8 +470,22 @@ class TestConnectionPool(unittest.TestCase):
         
         self.assertEquals(pool.max_connections, len(conns))
         
+class TestEncoding(unittest.TestCase):
+    def testGuessEncoding(self):
+        self.assertEquals('utf-8', guess_encoding(u"中文测试".encode('utf-8'))[1])
+        self.assertEquals('gb2312', guess_encoding("""<html><meta http-equiv="Content-Type" content="text/html; charset=gb2312" /></html>""")[1])
+        
+        with TestHTTPServer() as httpd:
+            self.assertEquals('gb2312', urlopen(httpd.root + 'encoding/gb2312/meta', guess_encoding=True).encoding)
+            self.assertEquals('utf-8', urlopen(httpd.root + 'encoding/utf-8/text', guess_encoding=True).encoding)
+            self.assertEquals('utf-8', urlopen(httpd.root + 'encoding/utf-8/header', guess_encoding=True).encoding)
+        
+    def testGuessCharset(self):
+        self.assertEquals('utf-8', guess_charset("text/html; charset=utf-8"))        
+        
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
                         format='%(asctime)s %(levelname)s %(message)s')
     
     unittest.main()
+    

@@ -21,6 +21,7 @@ from request import HttpRequest
 from response import HttpResponse
 from errors import PycurlError
 from flowcontrol import SiteProfile
+from guessencoding import guess_encoding, guess_charset
 
 class HttpClient(object):
     INFOTYPE_NAMES = {
@@ -33,9 +34,10 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None, profile=None):        
+    def __init__(self, dnscache=None, profile=None, guess_encoding=None):        
         self.dnscache = dnscache
         self.profile = profile
+        self.guess_encoding = guess_encoding
 
         self.curl = pycurl.Curl()
                 
@@ -228,5 +230,17 @@ class HttpClient(object):
         
         self._cleanup()
                 
-        return HttpResponse(self, request)
+        response = HttpResponse(self, request)
+        
+        if self.guess_encoding:
+            charset = guess_charset(response.headers.get("Content-Type"))
+            
+            text, response.encoding, response.declared_encoding = guess_encoding(self.body.read(), [charset])
+            
+            self.body.close()
+            self.body = StringIO()
+            self.body.write('utf-8')
+            self.body.seek(0)
+        
+        return response
         
