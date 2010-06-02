@@ -481,7 +481,9 @@ class TestEncoding(unittest.TestCase):
             self.assertEquals('utf-8', urlopen(httpd.root + 'encoding/utf-8/header', guess_encoding=True).encoding)
         
     def testGuessCharset(self):
-        self.assertEquals('utf-8', guess_charset("text/html; charset=utf-8"))        
+        self.assertEquals('utf-8', guess_charset("text/html; charset=utf-8"))
+        self.assertEquals('ISO-8859-4', guess_charset("text/html; charset=ISO-8859-4"))
+        self.assertEquals(None, guess_charset("text/html"))
         
 if __name__=='__main__':    
     logging.basicConfig(level=logging.DEBUG if "-v" in sys.argv else logging.WARN,
