@@ -239,7 +239,7 @@ class HttpClient(object):
             
             self.body.close()
             self.body = StringIO()
-            self.body.write('utf-8')
+            self.body.write(text.encode('utf-8'))
             self.body.seek(0)
         
         return response
