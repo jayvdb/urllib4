@@ -34,7 +34,7 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None, profile=None, guess_encoding=[]):        
+    def __init__(self, dnscache=None, profile=None, guess_encoding=None):        
         self.dnscache = dnscache
         self.profile = profile
         self.guess_encoding = guess_encoding
@@ -232,9 +232,15 @@ class HttpClient(object):
                 
         response = HttpResponse(self, request)
         
-        if self.guess_encoding:
+        if self.guess_encoding is not None:
             charset = guess_charset(response.headers.get("Content-Type"))
             
+            if type(self.guess_encoding) == str:
+                self.guess_encoding = [self.guess_encoding, charset]
+            elif type(self.guess_encoding) == list:                
+                self.guess_encoding += [charset]
+            else:
+                self.guess_encoding = [charset]
             
             text, response.encoding, response.declared_encoding = \
                 guess_encoding(self.body.read(), self.guess_encoding + [charset])
