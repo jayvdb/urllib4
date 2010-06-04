@@ -18,7 +18,7 @@ __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
 
 Request = HttpRequest
 
-def urlopen(url_or_request, data_or_reader=None, timeout=None, guess_encoding=False):
+def urlopen(url_or_request, data_or_reader=None, timeout=None, guess_encoding=[]):
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
