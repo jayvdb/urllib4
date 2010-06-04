@@ -47,7 +47,10 @@ class ConnectionPool(object):
         
         if self.min_connections:            
             for i in range(self.min_connections):
-                self.idle_conns.append(self.connection_creator())
+                conn = self.connection_creator()
+                
+                if conn:
+                    self.idle_conns.append()
             
     def __nonzero__(self):
         with self.lock:
