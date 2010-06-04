@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import re
+import sys, re
 
-RE_CONTENT_TYPE = re.compile('(?P<type>\w+/\w+);\s+charset=(?P<charset>[\w-]+)', re.I)
+RE_CONTENT_TYPE = re.compile('(?P<type>\w+/\w+);\s*charset=(?P<charset>[\w-]+)', re.I)
 
 def guess_charset(header):
     if header is None:
@@ -19,3 +19,8 @@ def guess_encoding(content, suggest_encodings=[]):
                            smartQuotesTo=BeautifulStoneSoup.HTML_ENTITIES)
     
     return dammit.unicode, dammit.originalEncoding, dammit.declaredHTMLEncoding
+
+if __name__=='__main__':
+    from client import HttpClient
+    
+    print HttpClient(guess_encoding=True).get(sys.argv[1]).encoding
