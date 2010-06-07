@@ -8,6 +8,11 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 import pycurl
 
 class HttpResponse(object):
@@ -67,6 +72,7 @@ class HttpResponse(object):
         self.client = client
         self.request = request
         
+        self.body = StringIO(''.join(client.body))
         self.cached_headers = None
         
     def __getattr__(self, name):
@@ -74,7 +80,7 @@ class HttpResponse(object):
         if name in ['__iter__', 'next', 'isatty', 'seek', 'tell',
                     'read', 'readline', 'readlines', 'truncate',
                     'write', 'writelines', 'flush']:
-            return getattr(self.client.body, name)
+            return getattr(self.body, name)
         elif self.BUILDIN_FIELDS.has_key(name):
             value = self.BUILDIN_FIELDS[name]
             
@@ -120,9 +126,12 @@ class HttpResponse(object):
         from httplib import HTTPMessage
         
         if not self.cached_headers:
-            self.client.header.readline() # eat the first line 'HTTP/1.1 200 OK'
-            self.cached_headers = HTTPMessage(self.client.header)
-            self.client.header.seek(0)
+            header = StringIO(''.join(self.client.header))
+            try:
+                header.readline() # eat the first line 'HTTP/1.1 200 OK'
+                self.cached_headers = HTTPMessage(header)
+            finally:
+                header.close()
             
         return self.cached_headers
     
