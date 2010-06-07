@@ -72,7 +72,13 @@ class HttpResponse(object):
         self.client = client
         self.request = request
         
-        self.body = StringIO(''.join(client.body))
+        self.body = StringIO() 
+    
+        for s in client.body:
+            self.body.write(s)
+        
+        self.body.seek(0)
+        
         self.cached_headers = None
         
     def __getattr__(self, name):

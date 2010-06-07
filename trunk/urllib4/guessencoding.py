@@ -23,4 +23,8 @@ def guess_encoding(content, suggest_encodings=[]):
 if __name__=='__main__':
     from client import HttpClient
     
-    print HttpClient(guess_encoding=['gbk', 'gb2312']).get(sys.argv[1]).encoding
+    r = HttpClient(guess_encoding=['gbk', 'gb2312']).get(sys.argv[1])
+     
+    text = r.read().decode(r.encoding)
+    
+    print text
