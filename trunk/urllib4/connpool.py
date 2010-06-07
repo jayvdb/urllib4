@@ -50,7 +50,7 @@ class ConnectionPool(object):
                 conn = self.connection_creator()
                 
                 if conn:
-                    self.idle_conns.append()
+                    self.idle_conns.append(conn)
             
     def __nonzero__(self):
         with self.lock:
