@@ -230,9 +230,7 @@ class HttpClient(object):
                 self.guess_encoding = [charset]
             
             text, response.encoding, response.declared_encoding = \
-                guess_encoding(''.join(self.body), self.guess_encoding + [charset])
-            
-            self.body = [text.encode('utf-8')]
+                guess_encoding(''.join(self.body), self.guess_encoding + [charset])            
         
         return response
         
