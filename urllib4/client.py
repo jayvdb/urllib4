@@ -3,11 +3,6 @@ import string, binascii
 import logging
 
 try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
-    
-try:
     from gurl import Url
     urlparse = Url
 except ImportError:
@@ -41,13 +36,11 @@ class HttpClient(object):
 
         self.curl = pycurl.Curl()
                 
-        self.header = StringIO()
-        self.body = StringIO()
+        self.header = []
+        self.body = []
                 
     def __del__(self):
         self.curl.close()
-        self.header.close()
-        self.body.close()        
         
     def _log(self, type, msg):
         if [c for c in msg if c not in string.printable]:
@@ -75,8 +68,8 @@ class HttpClient(object):
             self.curl.setopt(pycurl.NOPROGRESS, 1)
         
     def _apply_request_setting(self, request):        
-        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.write(buf))
-        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.write(buf))
+        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.append(buf))
+        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.append(buf))
         
         if request.data_or_reader:
             if callable(request.data_or_reader):
@@ -198,10 +191,7 @@ class HttpClient(object):
     def post(self, url, data_or_reader, progress_callback=None):
         return self.perform(HttpRequest(url, data_or_reader), progress_callback)
         
-    def perform(self, request, progress_callback=None):
-        self.header.seek(0)
-        self.body.seek(0)
-        
+    def perform(self, request, progress_callback=None):        
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
         
@@ -223,10 +213,7 @@ class HttpClient(object):
         try:
             self.curl.perform()
         except pycurl.error, (code, msg):
-            PycurlError.convert(code, msg)
-        
-        self.header.seek(0)
-        self.body.seek(0)
+            PycurlError.convert(code, msg)        
         
         self._cleanup()
                 
@@ -243,12 +230,9 @@ class HttpClient(object):
                 self.guess_encoding = [charset]
             
             text, response.encoding, response.declared_encoding = \
-                guess_encoding(self.body.read(), self.guess_encoding + [charset])
+                guess_encoding(''.join(self.body), self.guess_encoding + [charset])
             
-            self.body.close()
-            self.body = StringIO()
-            self.body.write(text.encode('utf-8'))
-            self.body.seek(0)
+            self.body = [text.encode('utf-8')]
         
         return response
         
