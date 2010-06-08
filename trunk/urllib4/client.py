@@ -8,6 +8,11 @@ try:
 except ImportError:
     from urlparse import urlparse
     
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+    
 import urllib
 
 import pycurl
@@ -17,6 +22,31 @@ from response import HttpResponse
 from errors import PycurlError
 from flowcontrol import SiteProfile
 from guessencoding import guess_encoding, guess_charset
+
+PROGRESS_CALLBACK_CONTINUE = 0
+PROGRESS_CALLBACK_ABORT = 1
+
+READ_CALLBACK_ABORT = pycurl.READFUNC_ABORT
+
+"""
+def debug_callback(type, msg):
+    pass
+    
+def header_callback(buf):
+    return len(buf)    
+    
+def write_callback(buf):
+    return len(buf) # number of characters written
+    
+def read_callback(size):
+    return <str> or READ_CALLBACK_ABORT
+    
+def progress_callback(download_total, downloaded, upload_total, uploaded):
+    return PROGRESS_CALLBACK_CONTINUE or PROGRESS_CALLBACK_ABORT
+    
+def ioctl_callback(cmd):
+    return <status>
+"""
 
 class HttpClient(object):
     INFOTYPE_NAMES = {
@@ -29,7 +59,7 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None, profile=None, guess_encoding=None):        
+    def __init__(self, dnscache=None, profile=None, guess_encoding=None):
         self.dnscache = dnscache
         self.profile = profile
         self.guess_encoding = guess_encoding
@@ -38,6 +68,7 @@ class HttpClient(object):
                 
         self.header = []
         self.body = []
+        self.file = None
                 
     def __del__(self):
         self.curl.close()
@@ -66,10 +97,19 @@ class HttpClient(object):
             self.curl.setopt(pycurl.PROGRESSFUNCTION, progress_callback)
         else:
             self.curl.setopt(pycurl.NOPROGRESS, 1)
+            
+    def _header_callback(self, buf):
+        self.header.append(buf)
         
+    def _write_callback(self, buf):
+        if self.file:
+            self.file.write(buf)
+        else:
+            self.body.append(buf)
+                           
     def _apply_request_setting(self, request):        
-        self.curl.setopt(pycurl.HEADERFUNCTION, lambda buf: self.header.append(buf))
-        self.curl.setopt(pycurl.WRITEFUNCTION, lambda buf: self.body.append(buf))
+        self.curl.setopt(pycurl.HEADERFUNCTION, self._header_callback)
+        self.curl.setopt(pycurl.WRITEFUNCTION, self._write_callback)
         
         if request.data_or_reader:
             if callable(request.data_or_reader):
@@ -184,12 +224,38 @@ class HttpClient(object):
                 
         else:
             self.curl.setopt(pycurl.PROXY, "")
+            
+    @property
+    def status(self):
+        from httplib import HTTPMessage
+        
+        header = StringIO(''.join(self.header))
+        try:
+            return header.readline()
+        finally:
+            header.close()
+            
+    @property
+    def headers(self):
+        from httplib import HTTPMessage
+        
+        header = StringIO(''.join(self.header))
+        try:
+            header.readline() # eat the first line 'HTTP/1.1 200 OK'
+            return HTTPMessage(header)
+        finally:
+            header.close()
 
     def get(self, url, progress_callback=None):
         return self.perform(HttpRequest(url), progress_callback)
         
     def post(self, url, data_or_reader, progress_callback=None):
         return self.perform(HttpRequest(url, data_or_reader), progress_callback)
+        
+    def download(self, url, file, progress_callback=None):
+        self.file = file
+        
+        return self.perform(HttpRequest(url), progress_callback)
         
     def perform(self, request, progress_callback=None):        
         self._apply_debug_setting(request)
