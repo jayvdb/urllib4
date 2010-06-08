@@ -2,7 +2,7 @@
 from request import HttpRequest, REDIRECT_INFINITE, REDIRECT_REFUSE
 from response import HttpResponse
 from errors import *
-from client import HttpClient
+from client import HttpClient, PROGRESS_CALLBACK_CONTINUE, PROGRESS_CALLBACK_ABORT 
 from fetcher import HttpFetcher
 from dnscache import DnsCache
 from flowcontrol import SiteProfile
@@ -10,6 +10,7 @@ from connpool import BaseConnection, ConnectionPool
 
 __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
            'HttpResponse', 'HttpClient', 'HttpFetcher',
+           'PROGRESS_CALLBACK_CONTINUE', 'PROGRESS_CALLBACK_ABORT',
            'DnsCache', 'SiteProfile',
            'UnsupportedProtocol', 'TooManyRedirects', 'ConnectError',
            'ProxyResolveError', 'HostResolveError', 'OperationTimeoutError',

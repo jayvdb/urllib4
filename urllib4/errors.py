@@ -39,11 +39,15 @@ class OperationTimeoutError(PycurlError):
 class TooManyRedirects(PycurlError):
     pass
 
+class CallbackAborted(PycurlError):
+    pass
+
 PYCURL_ERRORS = {
     pycurl.E_UNSUPPORTED_PROTOCOL: UnsupportedProtocol,
     pycurl.E_COULDNT_RESOLVE_PROXY: ProxyResolveError,
     pycurl.E_COULDNT_RESOLVE_HOST: HostResolveError,
     pycurl.E_COULDNT_CONNECT: ConnectError,
     pycurl.E_OPERATION_TIMEOUTED: OperationTimeoutError,
-    pycurl.E_TOO_MANY_REDIRECTS: TooManyRedirects,    
+    pycurl.E_TOO_MANY_REDIRECTS: TooManyRedirects,
+    pycurl.E_ABORTED_BY_CALLBACK: CallbackAborted,
 }
