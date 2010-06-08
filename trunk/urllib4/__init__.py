@@ -19,7 +19,7 @@ __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
 Request = HttpRequest
 
 def urlopen(url_or_request, data_or_reader=None, timeout=None,
-            guess_encoding=None, *args, **kwds):
+            guess_encoding=None, progress_callback=None, *args, **kwds):
     
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
@@ -29,4 +29,4 @@ def urlopen(url_or_request, data_or_reader=None, timeout=None,
     if timeout:
         SiteProfile.get(request.hostname).timeout = timeout
         
-    return HttpClient(guess_encoding=guess_encoding).perform(request)
+    return HttpClient(guess_encoding=guess_encoding).perform(request, progress_callback)
