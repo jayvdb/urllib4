@@ -18,15 +18,21 @@ __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
 
 Request = HttpRequest
 
-def urlopen(url_or_request, data_or_reader=None, timeout=None,
-            guess_encoding=None, progress_callback=None, *args, **kwds):
+def urlopen(url_or_request, data_or_reader=None, 
+            guess_encoding=None, progress_callback=None,
+            session_timeout=None, connect_timeout=None,
+            *args, **kwds):
     
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
         request = HttpRequest(str(url_or_request), data_or_reader, **kwds)
         
-    if timeout:
-        SiteProfile.get(request.hostname).timeout = timeout
+    if session_timeout or connect_timeout:
+        profile = SiteProfile.get(request.hostname)
+        profile.timeout = session_timeout
+        profile.connect_timeout = connect_timeout
+    else:
+        profile = None
         
-    return HttpClient(guess_encoding=guess_encoding).perform(request, progress_callback)
+    return HttpClient(profile=profile, guess_encoding=guess_encoding).perform(request, progress_callback)
