@@ -132,7 +132,7 @@ class HttpResponse(object):
         from httplib import HTTPMessage
         
         if not self.cached_headers:
-            header = StringIO(''.join(self.client.header))
+            header = StringIO(self.raw_headers)
             try:
                 header.readline() # eat the first line 'HTTP/1.1 200 OK'
                 self.cached_headers = HTTPMessage(header)
@@ -143,3 +143,6 @@ class HttpResponse(object):
     
     info = headers
         
+    @property
+    def raw_headers(self):
+        return ''.join(self.client.header)
