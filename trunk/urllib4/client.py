@@ -138,7 +138,7 @@ class HttpClient(object):
                 
                 return o.hostname, request.url.replace(o.hostname, addresses[0])
                 
-        return o.hostname, request.url
+        return o.hostname, request.url    
                 
     def _apply_network_setting(self, request):
         if request.interface:
@@ -246,16 +246,16 @@ class HttpClient(object):
         finally:
             header.close()
 
-    def get(self, url, progress_callback=None):
-        return self.perform(HttpRequest(url), progress_callback)
+    def get(self, url, progress_callback=None, **kwds):
+        return self.perform(HttpRequest(url, **kwds), progress_callback)
         
-    def post(self, url, data_or_reader, progress_callback=None):
-        return self.perform(HttpRequest(url, data_or_reader), progress_callback)
+    def post(self, url, data_or_reader, progress_callback=None, **kwds):
+        return self.perform(HttpRequest(url, data_or_reader, **kwds), progress_callback)
         
-    def download(self, url, file, progress_callback=None):
+    def download(self, url, file, progress_callback=None, **kwds):
         self.file = file
         
-        return self.perform(HttpRequest(url), progress_callback)
+        return self.perform(HttpRequest(url, **kwds), progress_callback)
         
     def perform(self, request, progress_callback=None):        
         self._apply_debug_setting(request)
