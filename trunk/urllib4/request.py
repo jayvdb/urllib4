@@ -13,7 +13,8 @@ REDIRECT_INFINITE   = -1
 class HttpRequest(object):    
     def __init__(self, url, data_or_reader=None, headers={}, 
                  origin_req_host=None, unverifiable=False,
-                 referer=None, user_agent=None, 
+                 referer=None, user_agent=None,
+                 session_timeout=None, connect_timeout=None,
                  interface=None, local_port=None, local_port_range=None, tcp_nodelay=None,
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
@@ -27,6 +28,8 @@ class HttpRequest(object):
         self.headers = headers
         self.referer = referer
         self.user_agent = user_agent
+        self.session_timeout = session_timeout
+        self.connect_timeout = connect_timeout
         self.interface = interface
         self.local_port = local_port
         self.local_port_range = local_port_range

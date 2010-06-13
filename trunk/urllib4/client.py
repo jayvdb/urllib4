@@ -59,10 +59,11 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None, profile=None, guess_encoding=None):
+    def __init__(self, dnscache=None, profile=None, guess_encoding=None, dump_raw_data=False):
         self.dnscache = dnscache
         self.profile = profile
         self.guess_encoding = guess_encoding
+        self.dump_raw_data = dump_raw_data
 
         self.curl = pycurl.Curl()
                 
@@ -74,10 +75,11 @@ class HttpClient(object):
         self.curl.close()
         
     def _log(self, type, msg):
-        if [c for c in msg if c not in string.printable]:
-            logging.debug("%s: %s", self.INFOTYPE_NAMES[type], binascii.hexlify(msg))
-        else:
-            logging.debug("%s: %s", self.INFOTYPE_NAMES[type], msg)
+        if self.dump_raw_data:
+            if [c for c in msg if c not in string.printable]:
+                logging.debug("%s: %s", self.INFOTYPE_NAMES[type], binascii.hexlify(msg))
+            else:
+                logging.debug("%s: %s", self.INFOTYPE_NAMES[type], msg)
             
     def _cleanup(self):
         self.curl.setopt(pycurl.DEBUGFUNCTION, lambda type, msg: None)
@@ -138,7 +140,14 @@ class HttpClient(object):
                 
                 return o.hostname, request.url.replace(o.hostname, addresses[0])
                 
-        return o.hostname, request.url    
+        return o.hostname, request.url
+    
+    def _apply_timeout_setting(self, request):
+        if request.session_timeout:
+            self.curl.setopt(pycurl.TIMEOUT, request.session_timeout)
+
+        if request.connect_timeout:
+            self.curl.setopt(pycurl.CONNECTTIMEOUT, request.connect_timeout)
                 
     def _apply_network_setting(self, request):
         if request.interface:
@@ -269,6 +278,7 @@ class HttpClient(object):
         self.curl.setopt(pycurl.URL, url)
         
         self._apply_request_setting(request)
+        self._apply_timeout_setting(request)
         self._apply_network_setting(request)            
         self._apply_http_setting(request)
         self._apply_ssl_setting(request)
