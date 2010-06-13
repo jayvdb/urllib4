@@ -4,13 +4,14 @@ from response import HttpResponse
 from errors import *
 from client import HttpClient, PROGRESS_CALLBACK_CONTINUE, PROGRESS_CALLBACK_ABORT 
 from dnscache import DnsCache
+from pagecache import DictPageCache, MemcachePageCache
 from flowcontrol import SiteProfile
 from connpool import BaseConnection, ConnectionPool
 
 __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
            'HttpResponse', 'HttpClient', 
            'PROGRESS_CALLBACK_CONTINUE', 'PROGRESS_CALLBACK_ABORT',
-           'DnsCache', 'SiteProfile',
+           'DnsCache', 'DictPageCache', 'MemcachePageCache', 'SiteProfile',
            'UnsupportedProtocol', 'TooManyRedirects', 'ConnectError',
            'ProxyResolveError', 'HostResolveError', 'OperationTimeoutError',
            'BaseConnection', 'ConnectionPool',

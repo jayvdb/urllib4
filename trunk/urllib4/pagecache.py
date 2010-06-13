@@ -1,0 +1,61 @@
+#!/usr/bin/env python
+import memcache
+
+try:
+    import json
+except ImportError:
+    import simplejson as json
+
+class BasePage(object):
+    def __init__(self, cache, key, md5=None, etag=None, last_modified=None):
+        self.cache = cache
+        self.key = key
+        self.md5 = md5
+        self.etag = etag
+        self.last_modified = last_modified
+        
+    def update(self):
+        self.cache.update(self)        
+
+class BasePageCache(object):    
+    def key(self, method, url):
+        return "%s:%s" % (method, url)
+    
+    def get(self, url, method):
+        raise NotImplementedError()
+
+    def update(self, page):
+        raise NotImplementedError()
+
+class DictPageCache(BasePageCache):
+    def __init__(self):
+        BasePageCache.__init__(self)
+        
+        self.pages = {}
+        
+    def get(self, url, method='GET'):
+        self.pages.setdefault(self.key(method, url), BasePage(self, key))
+        
+    def update(self, page):
+        pass
+
+class MemcachePageCache(BasePageCache):
+    def __init__(self, servers, debug=False):
+        BasePageCache.__init__(self)
+        
+        self.mc = memcache.Client(servers, debug=1 if debug else 0)
+        
+    def get(self, url, method):
+        key = self.key(method, url)
+        data = self.mc.get(key)
+        
+        page = BasePage(self, key, **json.loads(data)) if data else BasePage(self, key)
+        
+        return page
+        
+    def update(self, page):
+        self.mc.put(self.key(method, url), json.dumps({
+            'md5': page.md5,
+            'etag': page.etag,
+            'last_modified': page.last_modified,
+        }))
