@@ -59,8 +59,10 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
     
-    def __init__(self, dnscache=None, profile=None, guess_encoding=None, dump_raw_data=False):
+    def __init__(self, dnscache=None, pagecache=None,
+                 profile=None, guess_encoding=None, dump_raw_data=False):
         self.dnscache = dnscache
+        self.pagecache = pagecache
         self.profile = profile
         self.guess_encoding = guess_encoding
         self.dump_raw_data = dump_raw_data
@@ -124,8 +126,19 @@ class HttpClient(object):
                     self.curl.setopt(pycurl.HTTPPOST, request.data_or_reader)
                 else:
                     self.curl.setopt(pycurl.POSTFIELDS, str(request.data_or_reader))
+                    
+            if request.method not in ['POST', None]:
+                self.curl.setopt(pycurl.CUSTOMREQUEST, request.method)
         else:
-            self.curl.setopt(pycurl.HTTPGET, 1)
+            if request.method == 'HEAD':
+                self.curl.setopt(pycurl.CURLOPT_NOBODY, 1)
+            elif request.method not in ['GET', None]:
+                self.curl.setopt(pycurl.CUSTOMREQUEST, request.method)
+            else:
+                self.curl.setopt(pycurl.HTTPGET, 1)
+            
+        if self.pagecache:
+            page = self.pagecache.get(request.url, request.method)
             
         self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key.capitalize(), value) for key, value in request.headers.items()])
                 
@@ -195,9 +208,6 @@ class HttpClient(object):
         if request.http_version:
             self.curl.setopt(pycurl.HTTP_VERSION, request.http_version)
         
-        if request.http_custom_request:
-            self.curl.setopt(pycurl.CUSTOMREQUEST, request.http_custom_request)
-                    
         if request.referer:
             self.curl.setopt(pycurl.REFERER, request.referer)
 

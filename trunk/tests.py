@@ -250,7 +250,7 @@ class TestRequst(unittest.TestCase):
             
     def testCustomRequest(self):
         with TestHTTPServer() as httpd:
-            request = HttpRequest(httpd.root, http_custom_request='TEST')
+            request = HttpRequest(httpd.root, method='TEST')
             response = HttpClient().perform(request)
             self.assertEqual("test", response.read())
             
