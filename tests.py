@@ -342,6 +342,10 @@ class TestDnsCache(unittest.TestCase):
         self.assertEqual(['127.0.0.1'], c.cache['localhost'])
         self.assertEqual('localhost', result['host'])
         
+class TestPageCache(unittest.TestCase):
+    def testCache(self):
+        c = DictPageCache()
+        
 class TestFlowControl(unittest.TestCase):
     def testTimeout(self):
         profile = SiteProfile.get('test', timeout_ms=1000)

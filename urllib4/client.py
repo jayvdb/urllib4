@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import string, binascii
 import logging
+from hashlib import md5
 
 try:
     from gurl import Url
@@ -244,6 +245,28 @@ class HttpClient(object):
         else:
             self.curl.setopt(pycurl.PROXY, "")
             
+    def _apply_pagecache_setting(self, request):
+        if self.pagecache:
+            self.page = self.pagecache.get(request.method, request.url)
+            
+            if self.page.etag:
+                request.headers['If-None-Match'] = self.page.etag
+                
+            if self.page.last_modified:
+                request.headers['If-Unmodified-Since'] = self.page.last_modified
+    
+    def _update_pagecache_setting(self, response):
+        if self.pagecache:
+            hash = md5()
+            
+            for data in self.body:
+                hash.update(data)
+                
+            self.page.md5 = hash.hexdigest() 
+            self.page.etag = respones.headers.get('ETag', None)
+            self.page.last_modified = respones.headers.get('Last-Modified', None)
+            self.page.update()
+            
     @property
     def status(self):
         from httplib import HTTPMessage
@@ -280,13 +303,14 @@ class HttpClient(object):
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
         
-        domain, url = self._apply_dnscache_setting(request)
+        domain, request.url = self._apply_dnscache_setting(request)
         
         profile = self.profile or SiteProfile.get(domain)
         profile.apply(self.curl)
         
-        self.curl.setopt(pycurl.URL, url)
+        self.curl.setopt(pycurl.URL, request.url)
         
+        self._apply_pagecache_setting(request)
         self._apply_request_setting(request)
         self._apply_timeout_setting(request)
         self._apply_network_setting(request)            
@@ -299,11 +323,13 @@ class HttpClient(object):
         try:
             self.curl.perform()
         except pycurl.error, (code, msg):
-            PycurlError.convert(code, msg)        
+            PycurlError.convert(code, msg)
         
         self._cleanup()
                 
         response = HttpResponse(self, request)
+            
+        self._update_pagecache_setting(response)
         
         if self.guess_encoding is not None:
             charset = guess_charset(response.headers.get("Content-Type"))
