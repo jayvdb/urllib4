@@ -11,7 +11,7 @@ REDIRECT_REFUSE     = 0
 REDIRECT_INFINITE   = -1
 
 class HttpRequest(object):    
-    def __init__(self, url, data_or_reader=None, headers={}, 
+    def __init__(self, url, data_or_reader=None, headers={}, method=None,
                  origin_req_host=None, unverifiable=False,
                  referer=None, user_agent=None,
                  session_timeout=None, connect_timeout=None,
@@ -19,13 +19,13 @@ class HttpRequest(object):
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
                  auto_referer=True, follow_location=True, max_redirects=REDIRECT_INFINITE,
-                 http_version='last', http_custom_request=None,
-                 realm=None, username=None, password=None, http_auth_mode=['anysafe'], 
+                 http_version='last', realm=None, username=None, password=None, http_auth_mode=['anysafe'], 
                  proxy_host=None, proxy_type='http', proxy_auth_mode=['anysafe']):
         
         self.url = url
         self.data_or_reader = data_or_reader
         self.headers = headers
+        self.method = method
         self.referer = referer
         self.user_agent = user_agent
         self.session_timeout = session_timeout
@@ -42,7 +42,6 @@ class HttpRequest(object):
         self.follow_location = follow_location
         self.max_redirects = max_redirects
         self.set_http_version(http_version)
-        self.http_custom_request = http_custom_request
         self.username = username
         self.password = password
         self.http_auth_mode = self._convert_auth_mode(http_auth_mode)        
@@ -74,7 +73,7 @@ class HttpRequest(object):
     
     def get_method(self):
         '''Return a string indicating the HTTP request method. '''
-        return 'GET' if self.has_data() else 'POST'
+        return self.method or ('GET' if self.has_data() else 'POST')    
     
     def add_data(self, data):
         '''Set the Request data to data.'''

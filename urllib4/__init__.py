@@ -18,7 +18,7 @@ __all__ = ['HttpRequest', 'REDIRECT_INFINITE', 'REDIRECT_REFUSE',
 
 Request = HttpRequest
 
-def urlopen(url_or_request, data_or_reader=None, 
+def urlopen(url_or_request, data_or_reader=None, headers={}, method=None,
             guess_encoding=None, progress_callback=None,
             session_timeout=None, connect_timeout=None,
             *args, **kwds):
@@ -26,7 +26,7 @@ def urlopen(url_or_request, data_or_reader=None,
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
-        request = HttpRequest(str(url_or_request), data_or_reader, **kwds)
+        request = HttpRequest(str(url_or_request), data_or_reader, headers, method, **kwds)
         
     if session_timeout or connect_timeout:
         profile = SiteProfile.get(request.hostname)
