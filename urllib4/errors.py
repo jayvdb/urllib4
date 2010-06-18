@@ -5,17 +5,17 @@ from urllib2 import URLError
 import pycurl
 
 class PycurlError(URLError):
-    def __init__(self, code, msg):        
+    def __init__(self, code, msg):
         self.code = code
         self.msg = msg
-        
+
     def __str__(self):
         return 'Pycurl Error %s: %s' % (self.code, self.msg)
-        
+
     @staticmethod
     def convert(code, msg):
         exc = PYCURL_ERRORS.get(code)
-        
+
         raise exc(code, msg) if exc else PycurlError(code, msg)
 
 class UnsupportedProtocol(PycurlError):
@@ -42,6 +42,9 @@ class TooManyRedirects(PycurlError):
 class CallbackAborted(PycurlError):
     pass
 
+class PartialFileError(PycurlError):
+    pass
+
 PYCURL_ERRORS = {
     pycurl.E_UNSUPPORTED_PROTOCOL: UnsupportedProtocol,
     pycurl.E_COULDNT_RESOLVE_PROXY: ProxyResolveError,
@@ -50,4 +53,5 @@ PYCURL_ERRORS = {
     pycurl.E_OPERATION_TIMEOUTED: OperationTimeoutError,
     pycurl.E_TOO_MANY_REDIRECTS: TooManyRedirects,
     pycurl.E_ABORTED_BY_CALLBACK: CallbackAborted,
+    pycurl.E_PARTIAL_FILE: PartialFileError,
 }
