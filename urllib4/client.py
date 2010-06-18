@@ -293,16 +293,16 @@ class HttpClient(object):
         finally:
             header.close()
 
-    def get(self, url, progress_callback=None, **kwds):
-        return self.perform(HttpRequest(url, **kwds), progress_callback)
+    def get(self, url, progress_callback=None, *args, **kwds):
+        return self.perform(HttpRequest(url, *args, **kwds), progress_callback)
 
-    def post(self, url, data_or_reader, progress_callback=None, **kwds):
-        return self.perform(HttpRequest(url, data_or_reader, **kwds), progress_callback)
+    def post(self, url, data_or_reader, progress_callback=None, *args, **kwds):
+        return self.perform(HttpRequest(url, data_or_reader, *args, **kwds), progress_callback)
 
-    def download(self, url, file, progress_callback=None, **kwds):
+    def download(self, url, file, progress_callback=None, *args, **kwds):
         self.file = file
 
-        return self.perform(HttpRequest(url, **kwds), progress_callback)
+        return self.perform(HttpRequest(url, *args, **kwds), progress_callback)
 
     def perform(self, request, progress_callback=None):
         self._apply_debug_setting(request)

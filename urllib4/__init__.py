@@ -29,7 +29,7 @@ def urlopen(url_or_request, data_or_reader=None, headers={}, method=None,
     if issubclass(type(url_or_request), HttpRequest):
         request = url_or_request
     else:
-        request = HttpRequest(str(url_or_request), data_or_reader, headers, method, **kwds)
+        request = HttpRequest(str(url_or_request), data_or_reader, headers, method, *args, **kwds)
 
     if session_timeout or connect_timeout:
         profile = SiteProfile.get(request.hostname)
@@ -43,8 +43,8 @@ def urlopen(url_or_request, data_or_reader=None, headers={}, method=None,
 
 def urlretrieve(url, filename=None, reporthook=None, data_or_reader=None,
                 dnscache=None, pagecache=None, *args, **kwds):
-    
-    request = HttpRequest(url, data_or_reader, **kwds)
+
+    request = HttpRequest(url, data_or_reader, *args, **kwds)
     client = HttpClient(dnscache=dnscache, pagecache=pagecache)
 
     if filename:

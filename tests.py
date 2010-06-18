@@ -25,34 +25,34 @@ import pycurl
 import unittest
 
 from urllib4 import *
-
-from urllib4.guessencoding import *
+from urllib4.guessencoding import guess_encoding, guess_charset
 
 class TestHTTPRequestHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         logging.info(format, *args)
 
-    def response(self, data, mimetype='text/html', check_etag=True):
-        if check_etag or self.headers.get('Ignore-Etag'):
-            etag = md5(data).hexdigest()
+    def response(self, data, mimetype='text/html'):
+        etag = '"%s"' % md5(data).hexdigest()
 
-            if '"%s"' % etag == self.headers.get('If-None-Match', None):
-                self.send_response(304)
-            else:
-                self.send_response(200)
-                self.send_header("Content-Type", mimetype)
-                self.send_header("Content-Length", len(data))
-                self.send_header("ETag", etag)
-                self.end_headers()
+        try:
+            if not self.headers.get('Ignore-Etag', None):
+                if etag == self.headers.get('If-None-Match', None):
+                    self.send_response(304)
+                    self.end_headers()
+                    return
 
-                self.wfile.write(data)
-        else:
             self.send_response(200)
             self.send_header("Content-Type", mimetype)
             self.send_header("Content-Length", len(data))
+            self.send_header("ETag", etag)
             self.end_headers()
 
             self.wfile.write(data)
+        except Exception, (errno, errmsg):
+            if errno != 10053:
+                import traceback
+
+                traceback.print_exc()
 
     def redirect(self, path):
         self.send_response(301)
@@ -369,15 +369,15 @@ class TestPageCache(unittest.TestCase):
 
             self.assertEquals(304, HttpClient(pagecache=c).get(httpd.root).code)
 
-            c.pages["GET:%s" % httpd.root].etag = ''
+            page = c.pages["GET:%s" % httpd.root]
+
+            page.etag = ''
 
             self.assertEquals(304, HttpClient(pagecache=c).get(httpd.root).code)
 
-            c.pages["GET:%s" % httpd.root].md5 = ''
+            page.md5 = page.etag = ''
 
-            headers = { 'Ignore-Etag': True }
-
-            self.assertEquals(200, HttpClient(pagecache=c).get(httpd.root, headers=headers).code)
+            self.assertEquals(200, HttpClient(pagecache=c).get(httpd.root).code)
 
 class TestFlowControl(unittest.TestCase):
     def testTimeout(self):

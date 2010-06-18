@@ -21,10 +21,10 @@ class HttpRequest(object):
                  auto_referer=True, follow_location=True, max_redirects=REDIRECT_INFINITE,
                  http_version='last', realm=None, username=None, password=None, http_auth_mode=['anysafe'],
                  proxy_host=None, proxy_type='http', proxy_auth_mode=['anysafe']):
-
         self.url = url
         self.data_or_reader = data_or_reader
-        self.headers = headers
+        self.headers = {}
+        self.headers.update(headers)
         self.method = method
         self.referer = referer
         self.user_agent = user_agent
