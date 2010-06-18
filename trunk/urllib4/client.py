@@ -253,7 +253,7 @@ class HttpClient(object):
                 request.headers['If-Unmodified-Since'] = self.page.last_modified
 
     def _update_pagecache_setting(self, response):
-        if self.pagecache:
+        if self.pagecache and response.code == 200:
             hash = md5()
 
             for data in self.body:
