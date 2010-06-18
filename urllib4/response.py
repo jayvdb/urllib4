@@ -18,13 +18,13 @@ import pycurl
 class HttpResponse(object):
     BUILDIN_FIELDS = {
             'url': pycurl.EFFECTIVE_URL,
-            'code': pycurl.RESPONSE_CODE,
+            'response_code': pycurl.RESPONSE_CODE,
             'connect_code': pycurl.HTTP_CONNECTCODE,
-                
-            # = Time = 
+
+            # = Time =
             #
             # An overview of the six time values available from curl_easy_getinfo()
-            # 
+            #
             # curl_easy_perform()
             #     |
             #     |--NAMELOOKUP
@@ -34,7 +34,7 @@ class HttpResponse(object):
             #     |--|--|--|--|--STARTTRANSFER
             #     |--|--|--|--|--|--TOTAL
             #     |--|--|--|--|--|--REDIRECT
-                    
+
             'namelookup_time': pycurl.NAMELOOKUP_TIME,
             'connect_time': pycurl.CONNECT_TIME,
             #'appconnect_time': pycurl.APPCONNECT_TIME,
@@ -42,45 +42,54 @@ class HttpResponse(object):
             'starttransfer_time': pycurl.STARTTRANSFER_TIME,
             'total_time': pycurl.TOTAL_TIME,
             'redirect_time': pycurl.REDIRECT_TIME,
-            
+
             'redirect_count': pycurl.REDIRECT_COUNT,
             'redirect_url': pycurl.REDIRECT_URL,
-            
+
             'size_upload': pycurl.SIZE_UPLOAD,
             'size_download': pycurl.SIZE_DOWNLOAD,
             'speed_upload': pycurl.SPEED_UPLOAD,
             'speed_download': pycurl.SPEED_DOWNLOAD,
             'header_size': pycurl.HEADER_SIZE,
             'request_size': pycurl.REQUEST_SIZE,
-            
+
             'ssl_verify_result': pycurl.SSL_VERIFYRESULT,
             'ssl_engines': pycurl.SSL_ENGINES,
-            
+
             'content_length_upload': pycurl.CONTENT_LENGTH_UPLOAD,
             'content_length_download': pycurl.CONTENT_LENGTH_DOWNLOAD,
             'content_type': pycurl.CONTENT_TYPE,
-            
+
             'os_errno': pycurl.OS_ERRNO,
             'num_connects': pycurl.NUM_CONNECTS,
             #'primary_ip': pycurl.PRIMARY_IP,
-            
+
             'cookie_list': pycurl.COOKIELIST,
             'last_socket': pycurl.LASTSOCKET,
         }
-            
-    def __init__(self, client, request):
+
+    def __init__(self, client, request, code=None):
         self.client = client
         self.request = request
-        
-        self.body = StringIO() 
-    
+        self._code = code
+
+        self.body = StringIO()
+
         for s in client.body:
             self.body.write(s)
-        
+
         self.body.seek(0)
-        
+
         self.cached_headers = None
-        
+
+    def _get_code(self):
+        return self._code or self.response_code
+
+    def _set_code(self, code):
+        self._code = code
+
+    code = property(_get_code, _set_code)
+
     def __getattr__(self, name):
 
         if name in ['__iter__', 'next', 'isatty', 'seek', 'tell',
@@ -89,36 +98,36 @@ class HttpResponse(object):
             return getattr(self.body, name)
         elif self.BUILDIN_FIELDS.has_key(name):
             value = self.BUILDIN_FIELDS[name]
-            
+
             if callable(value):
                 return value()
             elif type(value) == tuple:
                 field, convert = value
-                
+
                 return convert(self.client.curl.getinfo(field))
             else:
                 return self.client.curl.getinfo(value)
-            
+
         raise AttributeError(name)
-    
+
     def close(self):
         pass
-                
+
     def geturl(self):
         return self.url
-    
+
     @property
     def primary_ip(self):
         if hasattr(socket, "fromfd"):
             if self.last_socket >= 0:
                 sock = socket.fromfd(self.last_socket, socket.AF_INET, socket.SOCK_STREAM)
-                
+
                 if sock:
-                    return sock.getpeername()[0]                    
-                            
+                    return sock.getpeername()[0]
+
         try:
             domain = urlparse(self.url).hostname
-            
+
             if domain:
                 if self.client.dnscache:
                     return self.client.dnscache.get(domain)
@@ -130,7 +139,7 @@ class HttpResponse(object):
     @property
     def headers(self):
         from httplib import HTTPMessage
-        
+
         if not self.cached_headers:
             header = StringIO(self.raw_headers)
             try:
@@ -138,11 +147,11 @@ class HttpResponse(object):
                 self.cached_headers = HTTPMessage(header)
             finally:
                 header.close()
-            
+
         return self.cached_headers
-    
+
     info = headers
-        
+
     @property
     def raw_headers(self):
         return ''.join(self.client.header)

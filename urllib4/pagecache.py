@@ -15,7 +15,11 @@ class BasePage(object):
         self.last_modified = last_modified
         
     def update(self):
-        self.cache.update(self)        
+        self.cache.update(self)
+        
+    def __repr__(self):
+        return "<%s key=%s, md5=%s, etag=%s, last_modified=%s>" % \
+            (self.__class__.__name__, self.key, self.md5, self.etag, self.last_modified)
 
 class BasePageCache(object):    
     def key(self, method, url):
@@ -33,8 +37,10 @@ class DictPageCache(BasePageCache):
         
         self.pages = {}
         
-    def get(self, url, method='GET'):
-        self.pages.setdefault(self.key(method, url), BasePage(self, key))
+    def get(self, url, method):        
+        key = self.key(method, url)
+        
+        return self.pages.setdefault(key, BasePage(self, key))
         
     def update(self, page):
         pass
