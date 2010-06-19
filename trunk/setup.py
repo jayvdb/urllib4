@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'urllib4',
-    version = '0.2',
+    version = '0.3',
     packages = find_packages(exclude=['ez_setup', 'tests']),
     author = 'Flier Lu',
     author_email = 'flier.lu@gmail.com',
@@ -16,6 +16,11 @@ setup(
     keywords = 'urllib pycurl network http ftp',
     url = 'http://code.google.com/p/urllib4/',
     download_url = 'http://code.google.com/p/urllib4/downloads/list',
+    install_requires = [
+        'pycurl >= 7.19',
+        'BeautifulSoup >= 3.0.8',
+        'python-memcached >= 1.45',
+    ],
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -26,6 +31,6 @@ setup(
         'Programming Language :: Python',
         'Topic :: Internet',
         'Topic :: Internet :: WWW/HTTP',
-        'Topic :: Software Development',        
+        'Topic :: Software Development',
     ]
 )
