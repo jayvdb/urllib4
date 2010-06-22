@@ -10,6 +10,9 @@ import pycurl
 REDIRECT_REFUSE     = 0
 REDIRECT_INFINITE   = -1
 
+def capitalize(key):
+    return '-'.join([k.capitalize() for k in key.split('-')])
+
 class HttpRequest(object):
     def __init__(self, url, data_or_reader=None, headers={}, method=None,
                  origin_req_host=None, unverifiable=False,
@@ -89,7 +92,7 @@ class HttpRequest(object):
 
     def add_header(self, key, val):
         '''Add another header to the request.'''
-        self.headers[key.capitalize()] = val
+        self.headers[capitalize(key)] = val
 
     def has_header(self, header):
         '''Return whether the instance has the named header.'''
