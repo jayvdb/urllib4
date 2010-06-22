@@ -138,7 +138,7 @@ class HttpClient(object):
             else:
                 self.curl.setopt(pycurl.HTTPGET, 1)
 
-        self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key.capitalize(), value) for key, value in request.headers.items()])
+        self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key, value) for key, value in request.headers.items()])
 
     def _apply_dnscache_setting(self, request):
         o = urlparse(request.url)
@@ -247,10 +247,10 @@ class HttpClient(object):
             self.page = self.pagecache.get(request.url, request.get_method())
 
             if self.page.etag:
-                request.headers['If-None-Match'] = '"%s"' % self.page.etag
+                request.add_header('If-None-Match', '"%s"' % self.page.etag)
 
             if self.page.last_modified:
-                request.headers['If-Unmodified-Since'] = self.page.last_modified
+                request.add_header('If-Unmodified-Since', self.page.last_modified)
 
     def _update_pagecache_setting(self, response):
         if self.pagecache and response.code == 200:
