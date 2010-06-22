@@ -250,7 +250,7 @@ class HttpClient(object):
                 request.add_header('If-None-Match', '"%s"' % self.page.etag)
 
             if self.page.last_modified:
-                request.add_header('If-Unmodified-Since', self.page.last_modified)
+                request.add_header('If-Modified-Since', self.page.last_modified)
 
     def _update_pagecache_setting(self, response):
         if self.pagecache and response.code == 200:
