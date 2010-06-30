@@ -136,6 +136,10 @@ class TestHTTPServer(HTTPServer):
 
     @property
     def root(self):
+        if (self.scheme == 'http' and self.port == 80) or \
+           (self.scheme == 'https' and self.port == 443):
+            return '%s://%s/' % (self.scheme, self.host)
+
         return '%s://%s:%d/' % (self.scheme, self.host, self.port)
 
 #
@@ -206,6 +210,13 @@ class TestUrlLib(unittest.TestCase):
             self.assert_(r.headers.has_key('content-type'))
 
 class TestRequst(unittest.TestCase):
+    def testAuth(self):
+        r = HttpRequest('http://user:pass@domain/path')
+
+        self.assertEqual('http://domain/path', r.url)
+        self.assertEqual('user', r.username)
+        self.assertEqual('pass', r.password)
+
     def testHeader(self):
         with TestHTTPServer() as httpd:
             request = HttpRequest(httpd.root,
@@ -293,7 +304,8 @@ class TestResponse(unittest.TestCase):
             self.assertEqual(1, r.redirect_count)
             self.assertEqual(None, r.redirect_url)
 
-            r = HttpClient().perform(HttpRequest(url, follow_location=False))
+            req = HttpRequest(url, follow_location=False)
+            r = HttpClient().perform(req)
 
             self.assert_(url, r.geturl())
             self.assertEquals(301, r.code)
