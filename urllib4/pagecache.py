@@ -55,11 +55,14 @@ class MemcachePageCache(BasePageCache):
         key = self.key(method, url)
         data = self.mc.get(key)
 
-        params = dict([(k.encode('utf-8'), v.encode('utf-8') if v else v) for k, v in json.loads(data).items()])
+        if data:
+            params = dict([(k.encode('utf-8'), v.encode('utf-8') if v else v) for k, v in json.loads(data).items()])
 
-        page = BasePage(self, key, **params) if data else BasePage(self, key)
+            page = BasePage(self, key, **params)
 
-        return page
+            return page
+
+        return BasePage(self, key)
 
     def update(self, page):
         self.mc.set(page.key, json.dumps({
