@@ -5,6 +5,8 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+from urlparse import urlunparse
+
 import pycurl
 
 REDIRECT_REFUSE     = 0
@@ -22,9 +24,15 @@ class HttpRequest(object):
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
                  auto_referer=True, follow_location=True, max_redirects=REDIRECT_INFINITE,
-                 http_version='last', realm=None, username=None, password=None, http_auth_mode=['anysafe'],
-                 proxy_host=None, proxy_type='http', proxy_auth_mode=['anysafe']):
-        self.url = url
+                 http_version='last', realm=None, username=None, password=None, http_auth_mode=['any'],
+                 proxy_host=None, proxy_type='http', proxy_auth_mode=['any']):
+
+        u = urlparse(url)
+
+        netloc = "%s:%d" % (u.hostname, u.port) if u.port else u.hostname
+        params = u.params if hasattr(u, 'params') else ''
+
+        self.url = urlunparse((u.scheme, netloc, u.path, params, u.query, u.fragment))
         self.data_or_reader = data_or_reader
         self.headers = {}
         self.headers.update(headers)
@@ -45,8 +53,9 @@ class HttpRequest(object):
         self.follow_location = follow_location
         self.max_redirects = max_redirects
         self.set_http_version(http_version)
-        self.username = username
-        self.password = password
+        self.realm = realm
+        self.username = username or u.username
+        self.password = password or u.password
         self.http_auth_mode = self._convert_auth_mode(http_auth_mode)
         self.set_proxy(proxy_host, proxy_type, proxy_auth_mode)
 
