@@ -5,6 +5,7 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+from urllib import unquote
 from urlparse import urlunparse
 
 import pycurl
@@ -54,8 +55,8 @@ class HttpRequest(object):
         self.max_redirects = max_redirects
         self.set_http_version(http_version)
         self.realm = realm
-        self.username = username or u.username
-        self.password = password or u.password
+        self.username = username or unquote(u.username)
+        self.password = password or unquote(u.password)
         self.http_auth_mode = self._convert_auth_mode(http_auth_mode)
         self.set_proxy(proxy_host, proxy_type, proxy_auth_mode)
 
