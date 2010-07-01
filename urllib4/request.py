@@ -55,8 +55,8 @@ class HttpRequest(object):
         self.max_redirects = max_redirects
         self.set_http_version(http_version)
         self.realm = realm
-        self.username = username or unquote(u.username)
-        self.password = password or unquote(u.password)
+        self.username = username or unquote(u.username or '')
+        self.password = password or unquote(u.password or '')
         self.http_auth_mode = self._convert_auth_mode(http_auth_mode)
         self.set_proxy(proxy_host, proxy_type, proxy_auth_mode)
 
