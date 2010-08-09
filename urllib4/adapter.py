@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from request import HttpRequest
 from client import HttpClient
+from flowcontrol import SiteProfile
 
 Request = HttpRequest
 
