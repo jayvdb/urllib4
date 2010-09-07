@@ -21,6 +21,7 @@ import pycurl
 from request import HttpRequest
 from response import HttpResponse
 from errors import PycurlError
+from pipeline import get_default_pipeline
 from flowcontrol import SiteProfile
 from guessencoding import guess_encoding, guess_charset
 
@@ -60,10 +61,11 @@ class HttpClient(object):
         pycurl.INFOTYPE_TEXT: 'text',
     }
 
-    def __init__(self, dnscache=None, pagecache=None,
+    def __init__(self, dnscache=None, pagecache=None, pipeline=None,
                  profile=None, guess_encoding=None, dump_raw_data=False):
         self.dnscache = dnscache
         self.pagecache = pagecache
+        self.pipeline = pipeline
         self.profile = profile
         self.guess_encoding = guess_encoding
         self.dump_raw_data = dump_raw_data
@@ -296,15 +298,35 @@ class HttpClient(object):
     def get(self, url, progress_callback=None, *args, **kwds):
         return self.perform(HttpRequest(url, *args, **kwds), progress_callback)
 
+    def async_get(self, url, finish_callback, pipeline=None, progress_callback=None, *args, **kwds):
+        return self.async_perform(request=HttpRequest(url, *args, **kwds),
+                                  finish_callback=finish_callback,
+                                  pipeline=pipeline,
+                                  progress_callback=progress_callback)
+
     def post(self, url, data_or_reader, progress_callback=None, *args, **kwds):
         return self.perform(HttpRequest(url, data_or_reader, *args, **kwds), progress_callback)
+
+    def async_post(self, url, data_or_reader, finish_callback, pipeline=None, progress_callback=None, *args, **kwds):
+        return self.async_perform(request=HttpRequest(url, data_or_reader, *args, **kwds),
+                                  finish_callback=finish_callback,
+                                  pipeline=pipeline,
+                                  progress_callback=progress_callback)
 
     def download(self, url, file, progress_callback=None, *args, **kwds):
         self.file = file
 
         return self.perform(HttpRequest(url, *args, **kwds), progress_callback)
 
-    def perform(self, request, progress_callback=None):
+    def async_download(self, url, file, finish_callback, pipeline=None, progress_callback=None, *args, **kwds):
+        self.file = file
+
+        return self.async_perform(request=HttpRequest(url, *args, **kwds),
+                                  finish_callback=finish_callback,
+                                  pipeline=pipeline,
+                                  progress_callback=progress_callback)
+
+    def prepare(self, request, progress_callback=None):
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
 
@@ -325,13 +347,7 @@ class HttpClient(object):
         self._apply_auth_setting(request)
         self._apply_proxy_setting(request)
 
-        try:
-            self.curl.perform()
-        except pycurl.error, (code, msg):
-            PycurlError.convert(code, msg)
-
-        self._cleanup()
-
+    def postmortem(self, request):
         response = HttpResponse(self, request)
 
         self._update_pagecache_setting(response)
@@ -350,3 +366,33 @@ class HttpClient(object):
                 guess_encoding(''.join(self.body), self.guess_encoding + [charset])
 
         return response
+
+    def perform(self, request, progress_callback=None):
+        self.prepare(request, progress_callback)
+
+        try:
+            self.curl.perform()
+        except pycurl.error, (code, msg):
+            PycurlError.convert(code, msg)
+
+        self._cleanup()
+
+        return self.postmortem(request)
+
+    def async_perform(self, request, finish_callback, pipeline=None, progress_callback=None):
+        if pipeline is None:
+            pipeline = self.pipeline
+
+        if pipeline is None:
+            pipeline = get_default_pipeline()
+
+        self.prepare(request, progress_callback)
+
+        def onfinish(client, errno, errmsg):
+            self._cleanup()
+
+            response = self.postmortem(request)
+
+            finish_callback(response, errno, errmsg)
+
+        self.pipeline.add(self, onfinish)
