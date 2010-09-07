@@ -6,7 +6,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'urllib4',
-    version = '0.3',
+    version = '0.4',
     packages = find_packages(exclude=['ez_setup', 'tests']),
     author = 'Flier Lu',
     author_email = 'flier.lu@gmail.com',
@@ -22,7 +22,7 @@ setup(
         'python-memcached >= 1.45',
     ],
     classifiers = [
-        'Development Status :: 3 - Alpha',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Developers',
         'Intended Audience :: System Administrators',
         'License :: OSI Approved :: Apache Software License',
