@@ -32,7 +32,7 @@ class Dispatcher(object):
                 traceback.print_exc()
 
     def work(self):
-        while not self.terminated:
+        while True:
             callback, args, kwds = self.tasks.get()
 
             try:
@@ -45,12 +45,19 @@ class Dispatcher(object):
             self.tasks.task_done()
 
 class HttpPipeline(threading.Thread):
-    def __init__(self, dispatcher=None, loop_interval=1.0):
+    def __init__(self, dispatcher=None, concurrency=None, loop_interval=1.0):
         threading.Thread.__init__(self, name="pipeline")
 
-        self.setDaemon(true)
+        self.setDaemon(True)
 
         self.dispatcher = dispatcher
+
+        if self.dispatcher is None:
+            if concurrency is None:
+                self.dispatcher = Dispatcher()
+            else:
+                self.dispatcher = Dispatcher(concurrency)
+
         self.loop_interval = loop_interval
         self.pipeline = pycurl.CurlMulti()
         self.clients = {}
@@ -91,7 +98,7 @@ class HttpPipeline(threading.Thread):
     def run(self):
         while not self.terminated:
             while not self.terminated:
-                ret, num_handles = m.perform()
+                ret, num_handles = self.pipeline.perform()
 
                 if ret != pycurl.E_CALL_MULTI_PERFORM:
                     break
@@ -100,7 +107,7 @@ class HttpPipeline(threading.Thread):
                 break
 
             while not self.terminated:
-                num_queued, ok_list, err_list = m.info_read()
+                num_queued, ok_list, err_list = self.pipeline.info_read()
 
                 for curl in ok_list:
                     with self.lock:
@@ -117,7 +124,7 @@ class HttpPipeline(threading.Thread):
                 if num_queued == 0:
                     break
 
-            m.select(self.loop_interval)
+            self.pipeline.select(self.loop_interval)
 
 __pipeline = None
 

@@ -4,6 +4,55 @@
 <preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def">
   <boolean id="import_live">1</boolean>
 </preference-set>
+<preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def/demos/ajaxsearch.py">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <string id="documentRoot"></string>
+  <string id="executable-params"></string>
+  <string relative="path" id="filename">demos/ajaxsearch.py</string>
+  <string id="getparams"></string>
+  <string id="language">Python</string>
+  <string id="mpostparams"></string>
+  <string id="params">&#27827;&#21271;&#20892;&#19994;&#22823;&#23398;</string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">1</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment">PYTHONPATH=D:\Python\urllib4
+</string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def/demos/wget.py">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <string id="documentRoot"></string>
+  <string id="executable-params"></string>
+  <string relative="path" id="filename">demos/wget.py</string>
+  <string id="getparams"></string>
+  <string id="language">Python</string>
+  <string id="mpostparams"></string>
+  <string id="params">http://download.microsoft.com/download/2/E/9/2E911956-F90F-4BFB-8231-E292A7B6F287/GRMSDK_EN_DVD.iso</string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">1</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
 <preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def/tests.py">
 <preference-set id="Invocations">
 <preference-set id="default">
@@ -15,13 +64,13 @@
   <string id="getparams"></string>
   <string id="language">Python</string>
   <string id="mpostparams"></string>
-  <string id="params">TestDnsCache</string>
+  <string id="params">TestPageCache</string>
   <string id="postparams"></string>
   <string id="posttype">application/x-www-form-urlencoded</string>
   <string id="request-method">GET</string>
   <boolean id="show-dialog">1</boolean>
   <boolean id="sim-cgi">0</boolean>
-  <boolean id="use-console">0</boolean>
+  <boolean id="use-console">1</boolean>
   <string id="userCGIEnvironment"></string>
   <string id="userEnvironment"></string>
 </preference-set>
@@ -69,7 +118,7 @@
   <string id="request-method">GET</string>
   <boolean id="show-dialog">1</boolean>
   <boolean id="sim-cgi">0</boolean>
-  <boolean id="use-console">0</boolean>
+  <boolean id="use-console">1</boolean>
   <string id="userCGIEnvironment"></string>
   <string id="userEnvironment"></string>
 </preference-set>
@@ -87,13 +136,61 @@
   <string id="getparams"></string>
   <string id="language">Python</string>
   <string id="mpostparams"></string>
-  <string id="params">http://www.baidu.com/s?wd=%C3%C0%C5%AE</string>
+  <string id="params">http://www.cndfilm.com/20090323/101619.shtml</string>
   <string id="postparams"></string>
   <string id="posttype">application/x-www-form-urlencoded</string>
   <string id="request-method">GET</string>
   <boolean id="show-dialog">1</boolean>
   <boolean id="sim-cgi">0</boolean>
   <boolean id="use-console">1</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def/urllib4/request.py">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <string id="documentRoot"></string>
+  <string id="executable-params"></string>
+  <string relative="path" id="filename">urllib4/request.py</string>
+  <string id="getparams"></string>
+  <string id="language">Python</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
+  <string id="userCGIEnvironment"></string>
+  <string id="userEnvironment"></string>
+</preference-set>
+</preference-set>
+  <string id="lastInvocation">default</string>
+</preference-set>
+<preference-set idref="c0a17863-048f-49dc-a203-de6ad8b36def/urllib4/response.py">
+<preference-set id="Invocations">
+<preference-set id="default">
+  <string id="cookieparams"></string>
+  <string id="cwd"></string>
+  <string id="documentRoot"></string>
+  <string id="executable-params"></string>
+  <string relative="path" id="filename">urllib4/response.py</string>
+  <string id="getparams"></string>
+  <string id="language">Python</string>
+  <string id="mpostparams"></string>
+  <string id="params"></string>
+  <string id="postparams"></string>
+  <string id="posttype">application/x-www-form-urlencoded</string>
+  <string id="request-method">GET</string>
+  <boolean id="show-dialog">1</boolean>
+  <boolean id="sim-cgi">0</boolean>
+  <boolean id="use-console">0</boolean>
   <string id="userCGIEnvironment"></string>
   <string id="userEnvironment"></string>
 </preference-set>
