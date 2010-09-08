@@ -8,14 +8,14 @@ import pycurl
 
 class Dispatcher(object):
     def __init__(self, concurrency=2):
-        self.workers = [threading.Thread(target=self.work, name="dispatcher") for i in range(concurrency)]
+        self.terminated = False
+        self.tasks = Queue()
+
+        self.workers = [threading.Thread(target=lambda: self.work(), name="dispatcher") for i in range(concurrency)]
 
         for worker in self.workers:
             worker.setDaemon(True)
             worker.start()
-
-        self.terminated = False
-        self.tasks = Queue()
 
     def terminate(self):
         self.terminated = True
@@ -103,21 +103,22 @@ class HttpPipeline(threading.Thread):
                 if ret != pycurl.E_CALL_MULTI_PERFORM:
                     break
 
-            if self.terminated:
-                break
-
             while not self.terminated:
                 num_queued, ok_list, err_list = self.pipeline.info_read()
 
                 for curl in ok_list:
                     with self.lock:
-                        client, callback = self.remove(self.clients[curl])
+                        client, callback = self.clients[curl]
+
+                        self.remove(client)
 
                     self.dispatcher.dispatch(callback, client, 0, None)
 
                 for curl, errno, errmsg in err_list:
                     with self.lock:
-                        client, callback = self.remove(self.clients[curl])
+                        client, callback = self.clients[curl]
+
+                        self.remove(client)
 
                     self.dispatcher.dispatch(callback, client, errno, errmsg)
 

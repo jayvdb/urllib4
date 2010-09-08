@@ -23,6 +23,10 @@ def parse_cmdline():
 
     parser = OptionParser("Usage: %prog [options] <url> ...")
 
+    parser.add_option('-a', '--async-mode', dest='async_mode',
+                      action='store_true', default=False,
+                      help='Download multi URLs in the async mode')
+
     parser.add_option('-v', '--verbose', action='store_const',
                       const=logging.INFO, dest='log_level', default=DEFAULT_LOG_LEVEL,
                       help='Show the verbose information')
@@ -106,67 +110,82 @@ class CountDownLatch(object):
             while self.count > 0:
                 self.lock.wait()
 
+def onprogress(download_total, downloaded, upload_total, uploaded):
+    if download_total > 0:
+        if len(download_records) == 0:
+            print c.status
+            print "Length: %d (%s) [%s]" % (int(download_total), size_pretty(download_total), c.headers.get('Content-Type'))
+
+            print "Saving to: `%s`" % filename
+            print
+
+        download_records.append([datetime.now(), downloaded])
+
+        download_percent = downloaded/download_total if download_total else 0
+        download_progress = '='*int(download_percent * PROGRESS_BAR_LENGTH)
+
+        if len(download_progress) < PROGRESS_BAR_LENGTH:
+            download_progress += '>'
+            download_progress += ' '*(PROGRESS_BAR_LENGTH-len(download_progress))
+
+        download_status = "%3d%% [%s] %-10d" % (download_percent*100, download_progress, downloaded)
+
+        download_time = (datetime.now() - download_records[0][0]).seconds
+
+        if download_time > 0:
+            download_speed = downloaded/download_time
+            download_expect = timedelta(seconds=(download_total - downloaded) / download_speed)
+
+            download_status += " %s/s eta %s" % (size_pretty(download_speed), timedelta_prettry(download_expect))
+
+        update_status(download_status)
+
+    return urllib4.PROGRESS_CALLBACK_CONTINUE
+
 if __name__ == '__main__':
     opts, args = parse_cmdline()
 
     with urllib4.HttpPipeline() as pipeline:
         latch = CountDownLatch(len(args))
 
-        for url in args:
-            c = urllib4.HttpClient();
+        try:
+            for url in args:
+                c = urllib4.HttpClient();
 
-            print "--%s-- %s" % (datetime.now(), url)
+                print "--%s-- %s" % (datetime.now(), url)
 
-            o = urlparse(url)
+                o = urlparse(url)
 
-            filename = os.path.basename(o.path)
+                filename = os.path.basename(o.path)
 
-            print "HTTP request sent, awaiting response...",
+                print "HTTP request sent, awaiting response...",
 
-            download_records = []
+                download_records = []
 
-            def onfinish(client, errno, errmsg):
-                client.file.close()
+                if opts.async_mode:
+                    def onfinish(client, errno, errmsg):
+                        latch.countDown()
 
-                latch.countDown()
+                        if errno == 0:
+                            print "\nSucceeded download ", filename
+                        else:
+                            print "\nFail to download ", filename, ", error:", errno, errmsg
 
-                print client, errno, errmsg
+                    c.async_download(url, open(filename, 'wb'),
+                                     finish_callback=onfinish,
+                                     pipeline=pipeline)
+                else:
+                    c.download(url, open(filename, 'wb'),
+                               progress_callback=onprogress)
+        except:
+            import traceback
 
-            def onprogress(download_total, downloaded, upload_total, uploaded):
-                if download_total > 0:
-                    if len(download_records) == 0:
-                        print c.status
-                        print "Length: %d (%s) [%s]" % (int(download_total), size_pretty(download_total), c.headers.get('Content-Type'))
+            traceback.print_exc()
 
-                        print "Saving to: `%s`" % filename
-                        print
+        if opts.async_mode:
+            pipeline.start()
 
-                    download_records.append([datetime.now(), downloaded])
+            latch.await()
 
-                    download_percent = downloaded/download_total if download_total else 0
-                    download_progress = '='*int(download_percent * PROGRESS_BAR_LENGTH)
-
-                    if len(download_progress) < PROGRESS_BAR_LENGTH:
-                        download_progress += '>'
-                        download_progress += ' '*(PROGRESS_BAR_LENGTH-len(download_progress))
-
-                    download_status = "%3d%% [%s] %-10d" % (download_percent*100, download_progress, downloaded)
-
-                    download_time = (datetime.now() - download_records[0][0]).seconds
-
-                    if download_time > 0:
-                        download_speed = downloaded/download_time
-                        download_expect = timedelta(seconds=(download_total - downloaded) / download_speed)
-
-                        download_status += " %s/s eta %s" % (size_pretty(download_speed), timedelta_prettry(download_expect))
-
-                    update_status(download_status)
-
-                return urllib4.PROGRESS_CALLBACK_CONTINUE
-
-            c.async_download(url, open(filename, 'wb'),
-                             finish_callback=onfinish,
-                             pipeline=pipeline,
-                             progress_callback=onprogress)
-
-        latch.await()
+            pipeline.terminate()
+            pipeline.join()

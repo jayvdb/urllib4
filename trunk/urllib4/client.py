@@ -321,8 +321,13 @@ class HttpClient(object):
     def async_download(self, url, file, finish_callback, pipeline=None, progress_callback=None, *args, **kwds):
         self.file = file
 
+        def onfinish(*args, **kwds):
+            self.file.close()
+
+            finish_callback(*args, **kwds)
+
         return self.async_perform(request=HttpRequest(url, *args, **kwds),
-                                  finish_callback=finish_callback,
+                                  finish_callback=onfinish,
                                   pipeline=pipeline,
                                   progress_callback=progress_callback)
 
@@ -395,4 +400,4 @@ class HttpClient(object):
 
             finish_callback(response, errno, errmsg)
 
-        self.pipeline.add(self, onfinish)
+        pipeline.add(self, onfinish)
