@@ -20,7 +20,7 @@ class HttpRequest(object):
     def __init__(self, url, data_or_reader=None, headers={}, method=None,
                  origin_req_host=None, unverifiable=False,
                  referer=None, user_agent=None,
-                 session_timeout=None, connect_timeout=None,
+                 session_timeout=None, connect_timeout=None, no_signal=True,
                  interface=None, local_port=None, local_port_range=None, tcp_nodelay=None,
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
@@ -42,6 +42,7 @@ class HttpRequest(object):
         self.user_agent = user_agent
         self.session_timeout = session_timeout
         self.connect_timeout = connect_timeout
+        self.no_signal = no_signal
         self.interface = interface
         self.local_port = local_port
         self.local_port_range = local_port_range

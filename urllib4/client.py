@@ -162,6 +162,8 @@ class HttpClient(object):
         if request.connect_timeout:
             self.curl.setopt(pycurl.CONNECTTIMEOUT, request.connect_timeout)
 
+        self.curl.setopt(pycurl.NOSIGNAL, 1 if request.no_signal else 0)
+
     def _apply_network_setting(self, request):
         if request.interface:
             self.curl.setopt(pycurl.INTERFACE, request.interface)
