@@ -381,8 +381,8 @@ class HttpClient(object):
             self.curl.perform()
         except pycurl.error, (code, msg):
             PycurlError.convert(code, msg)
-
-        self._cleanup()
+        finally:
+            self._cleanup()
 
         return self.postmortem(request)
 
