@@ -297,6 +297,9 @@ class HttpClient(object):
         finally:
             header.close()
 
+    def close(self):
+        self.curl.close()
+
     def get(self, url, progress_callback=None, *args, **kwds):
         return self.perform(HttpRequest(url, *args, **kwds), progress_callback)
 
@@ -334,6 +337,8 @@ class HttpClient(object):
                                   progress_callback=progress_callback)
 
     def prepare(self, request, progress_callback=None):
+        request.client = self
+
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
 
