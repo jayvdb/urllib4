@@ -6,7 +6,8 @@ from flowcontrol import SiteProfile
 Request = HttpRequest
 
 def urlopen(url_or_request, data_or_reader=None, headers={}, method=None,
-            guess_encoding=None, dnscache=None, pagecache=None, progress_callback=None,
+            guess_encoding=None, dnscache=None, pagecache=None,
+            connect_callback=None, progress_callback=None,
             session_timeout=None, connect_timeout=None, *args, **kwds):
 
     if issubclass(type(url_or_request), HttpRequest):
@@ -22,7 +23,8 @@ def urlopen(url_or_request, data_or_reader=None, headers={}, method=None,
         profile = None
 
     return HttpClient(dnscache=dnscache, pagecache=pagecache,
-        profile=profile, guess_encoding=guess_encoding).perform(request, progress_callback)
+        profile=profile, guess_encoding=guess_encoding) \
+            .perform(request, progress_callback, connect_callback)
 
 def urlretrieve(url, filename=None, reporthook=None, data_or_reader=None,
                 dnscache=None, pagecache=None, *args, **kwds):

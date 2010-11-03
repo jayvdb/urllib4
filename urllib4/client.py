@@ -2,6 +2,7 @@
 import string, binascii
 import logging
 from hashlib import md5
+import socket
 
 try:
     from gurl import Url
@@ -142,16 +143,22 @@ class HttpClient(object):
 
         self.curl.setopt(pycurl.HTTPHEADER, ["%s: %s" % (key, value) for key, value in request.headers.items()])
 
-    def _apply_dnscache_setting(self, request):
+    def _apply_dnscache_setting(self, request, connect_callback=None):
         o = urlparse(request.url)
 
         if self.dnscache:
-            addresses = self.dnscache.get(o.hostname)
+            address = self.dnscache.get(o.hostname)[0]
+        elif connect_callback:
+            address = socket.gethostbyname(o.hostname)
 
-            if addresses:
-                request.add_header('host', o.hostname)
+            connect_callback(request, address)
+        else:
+            address = None
 
-                return o.hostname, request.url.replace(o.hostname, addresses[0])
+        if address:
+            request.add_header('host', o.hostname)
+
+            return o.hostname, request.url.replace(o.hostname, address)
 
         return o.hostname, request.url
 
@@ -336,13 +343,13 @@ class HttpClient(object):
                                   pipeline=pipeline,
                                   progress_callback=progress_callback)
 
-    def prepare(self, request, progress_callback=None):
+    def prepare(self, request, progress_callback=None, connect_callback=None):
         request.client = self
 
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
 
-        domain, request.url = self._apply_dnscache_setting(request)
+        domain, request.url = self._apply_dnscache_setting(request, connect_callback)
 
         profile = self.profile or SiteProfile.get(domain)
         profile.apply(self.curl)
@@ -379,8 +386,8 @@ class HttpClient(object):
 
         return response
 
-    def perform(self, request, progress_callback=None):
-        self.prepare(request, progress_callback)
+    def perform(self, request, progress_callback=None, connect_callback=None):
+        self.prepare(request, progress_callback, connect_callback)
 
         try:
             self.curl.perform()
