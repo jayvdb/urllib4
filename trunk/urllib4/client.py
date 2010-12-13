@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import sys, os, os.path
 import string, binascii
 import logging
 from hashlib import md5

@@ -64,7 +64,7 @@ class HttpResponse(object):
             'num_connects': pycurl.NUM_CONNECTS,
             #'primary_ip': pycurl.PRIMARY_IP,
 
-            'cookie_list': pycurl.COOKIELIST,
+            'cookie_list': pycurl.INFO_COOKIELIST,
             'last_socket': pycurl.LASTSOCKET,
         }
 
