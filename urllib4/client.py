@@ -347,6 +347,9 @@ class HttpClient(object):
     def prepare(self, request, progress_callback=None, connect_callback=None):
         request.client = self
 
+        self.header = []
+        self.body = []
+
         self._apply_debug_setting(request)
         self._apply_progress_setting(progress_callback)
 
@@ -369,6 +372,8 @@ class HttpClient(object):
 
     def postmortem(self, request):
         response = HttpResponse(self, request)
+        
+        self.file = None
 
         self._update_pagecache_setting(response)
 
