@@ -395,9 +395,7 @@ class HttpClient(object):
         self._apply_auth_setting(request)
         self._apply_proxy_setting(request)
 
-    def postmortem(self, request):
-        response = HttpResponse(self, request)
-
+    def postmortem(self, response):
         self.file = None
 
         self._update_pagecache_setting(response)
@@ -420,14 +418,16 @@ class HttpClient(object):
     def perform(self, request, progress_callback=None, connect_callback=None):
         self.prepare(request, progress_callback, connect_callback)
 
+        response = HttpResponse(self, request)
+
         try:
             self.curl.perform()
         except pycurl.error, (code, msg):
-            PycurlError.convert(code, msg)
+            PycurlError.convert(code, msg, response)
         finally:
             self._cleanup()
 
-        return self.postmortem(request)
+        return self.postmortem(response)
 
     def async_perform(self, request, finish_callback, pipeline=None, progress_callback=None):
         if pipeline is None:
