@@ -176,7 +176,8 @@ class HttpClient(object):
 
         self.curl.setopt(pycurl.NOSIGNAL, 1 if request.no_signal else 0)
 
-    def _create_socket(self, request, family, type, proto):
+    @staticmethod
+    def _create_socket(request, family, type, proto):
         s = socket.socket(family, type, proto)
 
         if request.sendbuf:
@@ -189,7 +190,7 @@ class HttpClient(object):
 
     def _apply_network_setting(self, request):
         if hasattr(pycurl, 'OPENSOCKETFUNCTION'):
-            self.curl.setopt(pycurl.OPENSOCKETFUNCTION, partial(self._create_socket, request=request))
+            self.curl.setopt(pycurl.OPENSOCKETFUNCTION, partial(self._create_socket, request))
 
         if request.interface:
             self.curl.setopt(pycurl.INTERFACE, request.interface)
