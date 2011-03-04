@@ -13,10 +13,14 @@ class PycurlError(URLError):
         return 'Pycurl Error %s: %s' % (self.code, self.msg)
 
     @staticmethod
-    def convert(code, msg):
-        exc = PYCURL_ERRORS.get(code)
+    def convert(code, msg, response=None):
+        exc_type = PYCURL_ERRORS.get(code, PycurlError)
+        exc_obj = exc_type(code, msg)
 
-        raise exc(code, msg) if exc else PycurlError(code, msg)
+        if response:
+            exc_obj.response = response
+
+        raise exc_obj
 
 class UnsupportedProtocol(PycurlError):
     pass
