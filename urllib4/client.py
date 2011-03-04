@@ -185,6 +185,9 @@ class HttpClient(object):
         if request.tcp_nodelay:
             self.curl.setopt(pycurl.TCP_NODELAY, request.tcp_nodelay)
 
+        if request.bufsize:
+            self.curl.setopt(pycurl.BUFFERSIZE, request.bufsize)
+
     def _apply_ssl_setting(self, request):
         if request.ssl_verify_peer:
             self.curl.setopt(pycurl.SSL_VERIFYPEER, 1)
@@ -217,6 +220,9 @@ class HttpClient(object):
     def _apply_http_setting(self, request):
         if request.http_version:
             self.curl.setopt(pycurl.HTTP_VERSION, request.http_version)
+
+        if request.range:
+            self.curl.setopt(pycurl.RANGE, "%d-%d" % tuple(request.range))
 
         if request.referer:
             self.curl.setopt(pycurl.REFERER, request.referer)
@@ -372,7 +378,7 @@ class HttpClient(object):
 
     def postmortem(self, request):
         response = HttpResponse(self, request)
-        
+
         self.file = None
 
         self._update_pagecache_setting(response)

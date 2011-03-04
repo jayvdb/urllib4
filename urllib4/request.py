@@ -19,9 +19,10 @@ def capitalize(key):
 class HttpRequest(object):
     def __init__(self, url, data_or_reader=None, headers={}, method=None,
                  origin_req_host=None, unverifiable=False,
-                 referer=None, user_agent=None,
+                 range=None, referer=None, user_agent=None,
                  session_timeout=None, connect_timeout=None, no_signal=True,
-                 interface=None, local_port=None, local_port_range=None, tcp_nodelay=None,
+                 interface=None, local_port=None, local_port_range=None,
+                 tcp_nodelay=None, bufsize=None,
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
                  auto_referer=True, follow_location=True, max_redirects=REDIRECT_INFINITE,
@@ -38,6 +39,7 @@ class HttpRequest(object):
         self.headers = {}
         self.headers.update(headers)
         self.method = method
+        self.range = range
         self.referer = referer
         self.user_agent = user_agent
         self.session_timeout = session_timeout
@@ -47,6 +49,7 @@ class HttpRequest(object):
         self.local_port = local_port
         self.local_port_range = local_port_range
         self.tcp_nodelay = tcp_nodelay
+        self.bufsize = bufsize
         self.cookie_or_file = cookie_or_file
         self.accept_encoding = accept_encoding
         self.ssl_verify_peer = ssl_verify_peer
