@@ -4,6 +4,7 @@ import string, binascii
 import logging
 from hashlib import md5
 import socket
+from functools import partial
 
 try:
     from gurl import Url
@@ -96,6 +97,9 @@ class HttpClient(object):
         self.curl.setopt(pycurl.PROGRESSFUNCTION, lambda download_total, downloaded, upload_total, uploaded: None)
         self.curl.setopt(pycurl.IOCTLFUNCTION, lambda cmd: None)
 
+        if hasattr(pycurl, 'OPENSOCKETFUNCTION'):
+            self.curl.setopt(pycurl.OPENSOCKETFUNCTION, lambda family, type, proto: None)
+
     def _apply_debug_setting(self, request):
         self.curl.setopt(pycurl.VERBOSE, 1)
         self.curl.setopt(pycurl.DEBUGFUNCTION, self._log)
@@ -172,7 +176,21 @@ class HttpClient(object):
 
         self.curl.setopt(pycurl.NOSIGNAL, 1 if request.no_signal else 0)
 
+    def _create_socket(self, request, family, type, proto):
+        s = socket.socket(family, type, proto)
+
+        if request.sendbuf:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, request.sendbuf)
+
+        if request.recvbuf:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, request.recvbuf)
+
+        return s
+
     def _apply_network_setting(self, request):
+        if hasattr(pycurl, 'OPENSOCKETFUNCTION'):
+            self.curl.setopt(pycurl.OPENSOCKETFUNCTION, partial(self._create_socket, request=request))
+
         if request.interface:
             self.curl.setopt(pycurl.INTERFACE, request.interface)
 

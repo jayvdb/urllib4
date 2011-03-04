@@ -22,7 +22,7 @@ class HttpRequest(object):
                  range=None, referer=None, user_agent=None,
                  session_timeout=None, connect_timeout=None, no_signal=True,
                  interface=None, local_port=None, local_port_range=None,
-                 tcp_nodelay=None, bufsize=None,
+                 tcp_nodelay=None, bufsize=None, sendbuf=None, recvbuf=None,
                  cookie_or_file=None, accept_encoding=None,
                  ssl_verify_peer=False, ssl_verify_host=False,
                  auto_referer=True, follow_location=True, max_redirects=REDIRECT_INFINITE,
@@ -50,6 +50,8 @@ class HttpRequest(object):
         self.local_port_range = local_port_range
         self.tcp_nodelay = tcp_nodelay
         self.bufsize = bufsize
+        self.sendbuf = sendbuf
+        self.recvbuf = recvbuf
         self.cookie_or_file = cookie_or_file
         self.accept_encoding = accept_encoding
         self.ssl_verify_peer = ssl_verify_peer
